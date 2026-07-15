@@ -5,6 +5,11 @@ module InstagramConnect
   class Account < ApplicationRecord
     self.table_name = "instagram_connect_accounts"
 
+    has_many :conversations, class_name: "InstagramConnect::Conversation",
+             foreign_key: :account_id, dependent: :destroy
+    has_many :comments, class_name: "InstagramConnect::Comment",
+             foreign_key: :account_id, dependent: :destroy
+
     validates :ig_user_id, presence: true, uniqueness: true
     validates :auth_path, presence: true
 

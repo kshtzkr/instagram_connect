@@ -19,6 +19,12 @@ SimpleCov.start do
     /lib/instagram_connect/connect.rb
     /app/models/instagram_connect/account.rb
     /app/jobs/instagram_connect/refresh_tokens_job.rb
+    /lib/instagram_connect/signature_verifier.rb
+    /lib/instagram_connect/ingest.rb
+    /app/models/instagram_connect/conversation.rb
+    /app/models/instagram_connect/message.rb
+    /app/models/instagram_connect/inbound_message.rb
+    /app/models/instagram_connect/comment.rb
   ]
   add_filter do |source_file|
     tracked.none? { |file| source_file.filename.end_with?(file) }
