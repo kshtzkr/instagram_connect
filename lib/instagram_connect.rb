@@ -41,6 +41,14 @@ module InstagramConnect
     def reset!
       @configuration = Configuration.new
     end
+
+    # The gem's base stylesheet, inlined into its layout so the UI is styled
+    # with no host asset-pipeline setup required.
+    def base_css
+      @base_css ||= File.read(
+        File.expand_path("../app/assets/stylesheets/instagram_connect/application.css", __dir__)
+      )
+    end
   end
 end
 

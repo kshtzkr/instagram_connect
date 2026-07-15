@@ -1,0 +1,106 @@
+/* instagram_connect — self-contained UI styles. All colours/spacing come from
+   CSS variables set from config.theme, so a host tints the whole UI from its
+   initializer without touching any CSS or view. */
+
+.ic-body {
+  margin: 0;
+  background: var(--ic-bg);
+  color: var(--ic-text);
+  font-family: var(--ic-font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ic-app { max-width: 900px; margin: 0 auto; padding: 0 0 4rem; }
+
+.ic-appbar {
+  display: flex; align-items: center; gap: 1.25rem;
+  padding: 0.9rem 1rem; border-bottom: 1px solid var(--ic-border);
+  background: var(--ic-surface); position: sticky; top: 0; z-index: 5;
+}
+.ic-appbar__brand { font-weight: 700; letter-spacing: -0.01em; }
+.ic-appbar__nav { display: flex; gap: 1rem; }
+.ic-appbar__nav a { color: var(--ic-muted); text-decoration: none; font-weight: 500; }
+.ic-appbar__nav a:hover { color: var(--ic-primary); }
+
+.ic-main { padding: 1rem; }
+.ic-screen { display: flex; flex-direction: column; gap: 1rem; }
+.ic-pagehead h1 { margin: 0.25rem 0 0; font-size: 1.5rem; letter-spacing: -0.02em; }
+.ic-pagehead p { margin: 0.15rem 0 0; color: var(--ic-muted); }
+
+.ic-inbox__title, .ic-comments__title, .ic-posts__title, .ic-publish__title,
+.ic-thread-view__title { margin: 0 0 1rem; font-size: 1.5rem; letter-spacing: -0.02em; }
+
+.ic-card, .ic-inbox, .ic-comments, .ic-posts, .ic-publish {
+  background: var(--ic-surface); border: 1px solid var(--ic-border);
+  border-radius: var(--ic-radius); padding: 1rem;
+}
+
+/* Inbox rows */
+.ic-conversations, .ic-comments__list, .ic-posts__list { list-style: none; margin: 0; padding: 0; }
+.ic-conversation, .ic-comment, .ic-post {
+  display: flex; flex-direction: column; gap: 0.25rem;
+  padding: 0.75rem 0.5rem; border-bottom: 1px solid var(--ic-border);
+}
+.ic-conversation:last-child, .ic-comment:last-child, .ic-post:last-child { border-bottom: 0; }
+.ic-conversation__link { display: flex; align-items: baseline; gap: 0.5rem; text-decoration: none; color: inherit; }
+.ic-conversation__name { font-weight: 600; }
+.ic-conversation__preview, .ic-comment__text { color: var(--ic-muted); font-size: 0.9rem; }
+.ic-conversation__unread {
+  margin-left: auto; background: var(--ic-primary); color: var(--ic-primary-contrast);
+  border-radius: 9999px; padding: 0.05rem 0.5rem; font-size: 0.75rem; font-weight: 700;
+}
+
+/* Thread + bubbles */
+.ic-thread-view__back { margin: 0 0 0.5rem; }
+.ic-thread-view__back a, .ic-posts__new, .ic-post__link { color: var(--ic-primary); text-decoration: none; }
+.ic-thread { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+.ic-message { max-width: 78%; padding: 0.6rem 0.8rem; border-radius: var(--ic-radius); }
+.ic-message--inbound { align-self: flex-start; background: var(--ic-customer-bubble); }
+.ic-message--outbound { align-self: flex-end; background: var(--ic-staff-bubble); }
+.ic-message__body { white-space: pre-wrap; }
+.ic-message__meta { display: block; margin-top: 0.25rem; font-size: 0.72rem; color: var(--ic-muted); }
+
+/* Composer + forms */
+.ic-composer, .ic-publish__form { display: flex; flex-direction: column; gap: 0.5rem; }
+.ic-composer__input, .ic-field__input, .ic-input, textarea, input[type="url"], input[type="text"] {
+  width: 100%; box-sizing: border-box; padding: 0.6rem 0.75rem;
+  border: 1px solid var(--ic-border); border-radius: var(--ic-radius);
+  font: inherit; color: inherit; background: var(--ic-surface);
+}
+.ic-field { display: flex; flex-direction: column; gap: 0.3rem; margin-bottom: 0.75rem; }
+.ic-field label, .ic-label { font-weight: 600; font-size: 0.85rem; }
+.ic-composer__note, .ic-publish__hint { color: var(--ic-warn); font-size: 0.85rem; }
+.ic-composer__closed { color: var(--ic-muted); }
+
+/* Buttons */
+.ic-btn, .ic-composer__send, .ic-publish__submit,
+button[type="submit"] {
+  display: inline-block; padding: 0.55rem 1rem; border: 0; cursor: pointer;
+  border-radius: var(--ic-radius); font: inherit; font-weight: 600;
+  background: var(--ic-primary); color: var(--ic-primary-contrast); text-decoration: none;
+}
+.ic-btn--secondary { background: var(--ic-surface); color: var(--ic-text); border: 1px solid var(--ic-border); }
+.ic-comment__actions { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; }
+.ic-comment__actions form { display: inline-flex; gap: 0.3rem; }
+.ic-comment__actions button { padding: 0.35rem 0.7rem; font-size: 0.85rem; }
+.ic-comment--hidden { opacity: 0.55; }
+
+/* Badges / flashes / empty */
+.ic-badge { display: inline-block; padding: 0.05rem 0.5rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; }
+.ic-badge--green { background: color-mix(in srgb, var(--ic-ok) 15%, transparent); color: var(--ic-ok); }
+.ic-badge--red { background: color-mix(in srgb, var(--ic-err) 15%, transparent); color: var(--ic-err); }
+.ic-badge--amber { background: color-mix(in srgb, var(--ic-warn) 15%, transparent); color: var(--ic-warn); }
+.ic-empty { color: var(--ic-muted); padding: 1rem 0.5rem; }
+.ic-flash { margin: 0 0 0.75rem; padding: 0.6rem 0.9rem; border-radius: var(--ic-radius); }
+.ic-flash--notice { background: color-mix(in srgb, var(--ic-ok) 12%, transparent); color: var(--ic-ok); }
+.ic-flash--alert { background: color-mix(in srgb, var(--ic-err) 12%, transparent); color: var(--ic-err); }
+
+.ic-posts__actions { margin: 0 0 0.75rem; }
+.ic-posts__quota { color: var(--ic-muted); font-size: 0.9rem; }
+
+@media (max-width: 480px) {
+  .ic-message { max-width: 88%; }
+  .ic-appbar { gap: 0.75rem; }
+}

@@ -25,11 +25,7 @@ RSpec.describe InstagramConnect::Generators::InstallGenerator do
       .to include('mount InstagramConnect::Engine => "/instagram"')
   end
 
-  it "copies the five table migrations" do
-    migrations = Dir[File.join(dest, "db/migrate/*_create_instagram_connect_*.rb")]
-    expect(migrations.size).to eq(5)
-
-    accounts = migrations.find { |f| f.include?("accounts") }
-    expect(File.read(accounts)).to include("create_table :instagram_connect_accounts")
+  it "does not copy migrations into the host (the gem owns them)" do
+    expect(Dir[File.join(dest, "db/migrate/*")]).to be_empty
   end
 end

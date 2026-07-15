@@ -40,6 +40,15 @@ module Dummy
   end
 end
 
+# Configure AR encryption before initialize! so the engine's to_prepare hook can
+# enable `encrypts` on the Account model at boot (mirrors a real host that has
+# run `bin/rails db:encryption:init`).
+ActiveRecord::Encryption.configure(
+  primary_key: "test_primary_key_padding_1234567890",
+  deterministic_key: "test_deterministic_key_padding_1234567890",
+  key_derivation_salt: "test_key_derivation_salt_padding_1234567890"
+)
+
 Dummy::Application.initialize!
 
 Dummy::Application.routes.draw do
@@ -50,12 +59,6 @@ end
 # Host base controller referenced by the default parent_controller.
 class ApplicationController < ActionController::Base
 end
-
-ActiveRecord::Encryption.configure(
-  primary_key: "test_primary_key_padding_1234567890",
-  deterministic_key: "test_deterministic_key_padding_1234567890",
-  key_derivation_salt: "test_key_derivation_salt_padding_1234567890"
-)
 
 ActiveRecord::Base.establish_connection(adapter: "sqlite3", database: ":memory:")
 ActiveRecord::Schema.verbose = false
@@ -129,7 +132,8 @@ ActiveRecord::Schema.define do
   add_index :instagram_connect_comments, :comment_id, unique: true
 end
 
-InstagramConnect::Account.enable_token_encryption!
+# Note: token encryption is enabled by the engine's to_prepare hook during
+# Dummy::Application.initialize! above — no manual call needed here.
 
 ActiveJob::Base.queue_adapter = :test
 

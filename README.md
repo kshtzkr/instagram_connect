@@ -46,12 +46,15 @@ gem "instagram_connect"
 
 ```bash
 bundle install
-bin/rails g instagram_connect:install   # initializer + engine mount + migrations
-bin/rails db:migrate
+bin/rails g instagram_connect:install   # writes the initializer + mounts the engine
+bin/rails db:migrate                    # runs the gem's migrations in place
 ```
 
-The install generator writes `config/initializers/instagram_connect.rb`, mounts the
-engine at `/instagram`, and copies migrations for all five tables.
+The install generator writes `config/initializers/instagram_connect.rb` and mounts
+the engine at `/instagram`. **Migrations ship inside the gem and run in place** —
+nothing is copied into your app, so every adopter gets exactly the same schema,
+versioned with the gem. That's the whole install: **configuration only, no copied
+migrations, views, or CSS.**
 
 ## Configuration
 
@@ -98,12 +101,30 @@ same `verify_token` you configured. Subscribe the fields you need: `messages`,
 
 ## The inbox UI
 
-Mounted at `/instagram`: a DM inbox with a window-aware reply composer, a comment
-moderation screen, and a publish screen. To restyle to your app's design system:
+Mounted at `/instagram`: a self-contained, self-styled DM inbox (window-aware reply
+composer), comment moderation, and publishing — its own chrome, like an admin engine.
+Nothing to build in your app.
+
+### Theming
+
+Tint the whole UI to your brand from the initializer — no CSS or view files in your
+app. Any subset of keys is merged over the gem defaults:
+
+```ruby
+config.theme = {
+  primary: "#0057a8",
+  font:    "Inter, system-ui, sans-serif",
+  radius:  "12px"
+}
+```
+
+Deeper control (optional): render inside your own layout with
+`config.inherit_host_layout = true` (then add `<%= instagram_connect_styles %>` to
+your `<head>`), or copy the views/controllers to fully override them:
 
 ```bash
-bin/rails g instagram_connect:views        # copies views into app/views/instagram_connect
-bin/rails g instagram_connect:controllers  # (optional) copies controllers to override
+bin/rails g instagram_connect:views        # copy views into app/views/instagram_connect
+bin/rails g instagram_connect:controllers  # copy controllers to override
 ```
 
 ## CLI
