@@ -42,10 +42,10 @@ module InstagramConnect
   end
 end
 
-# :nocov:
+# simplecov:disable
 if defined?(Rails::Engine)
   require_relative "instagram_connect/engine"
 elsif defined?(Rails::Railtie)
   require_relative "instagram_connect/railtie"
 end
-# :nocov:
+# simplecov:enable

@@ -1,31 +1,60 @@
 require_relative "spec_helper"
 
+# Boot the dummy application exactly once, even if this file is evaluated more
+# than once (Rails::Application#initialize! raises on a second call).
+return if defined?(INSTAGRAM_CONNECT_TEST_BOOTED)
+INSTAGRAM_CONNECT_TEST_BOOTED = true
+
 ENV["RAILS_ENV"] ||= "test"
 
-require "bundler/setup"
+require "rails"
+require "action_controller/railtie"
 require "active_record"
 require "active_job"
+require "rspec/rails"
 require "instagram_connect"
 
-# Active Record Encryption must be configured before any model that calls
-# `encrypts` is exercised.
+# Configure the gem before any model with `encrypts` autoloads.
+InstagramConnect.configure do |c|
+  c.auth_path = :instagram_login
+  c.app_id = "APPID"
+  c.app_secret = "SECRET"
+  c.verify_token = "VERIFY"
+end
+
+# A minimal host application that mounts the engine. Active Record is used bare
+# (manual in-memory connection) rather than via its railtie, so there is no
+# database.yml to manage.
+module Dummy
+  class Application < Rails::Application
+    config.eager_load = false
+    config.secret_key_base = "instagram_connect_dummy_secret_key_base_000000000000"
+    config.hosts.clear
+    config.logger = Logger.new(IO::NULL)
+    config.cache_store = :null_store
+    config.instagram_connect = {}
+  end
+end
+
+Dummy::Application.initialize!
+
+Dummy::Application.routes.draw do
+  mount InstagramConnect::Engine => "/instagram"
+  root to: ->(_env) { [ 200, { "Content-Type" => "text/plain" }, [ "ok" ] ] }
+end
+
+# Host base controller referenced by the default parent_controller.
+class ApplicationController < ActionController::Base
+end
+
 ActiveRecord::Encryption.configure(
   primary_key: "test_primary_key_padding_1234567890",
   deterministic_key: "test_deterministic_key_padding_1234567890",
   key_derivation_salt: "test_key_derivation_salt_padding_1234567890"
 )
 
-require_relative "../app/models/instagram_connect/application_record"
-require_relative "../app/models/instagram_connect/account"
-require_relative "../app/models/instagram_connect/conversation"
-require_relative "../app/models/instagram_connect/message"
-require_relative "../app/models/instagram_connect/inbound_message"
-require_relative "../app/models/instagram_connect/comment"
-require_relative "../app/jobs/instagram_connect/application_job"
-require_relative "../app/jobs/instagram_connect/refresh_tokens_job"
-
 ActiveRecord::Base.establish_connection(adapter: "sqlite3", database: ":memory:")
-
+ActiveRecord::Schema.verbose = false
 ActiveRecord::Schema.define do
   create_table :instagram_connect_accounts, force: true do |t|
     t.string :auth_path, null: false
@@ -101,12 +130,24 @@ InstagramConnect::Account.enable_token_encryption!
 ActiveJob::Base.queue_adapter = :test
 
 RSpec.configure do |config|
+  config.use_transactional_fixtures = false if config.respond_to?(:use_transactional_fixtures=)
+
+  # Re-apply a known gem configuration each example (the global spec_helper
+  # after-hook resets it) and clear the in-memory tables.
   config.before do
+    InstagramConnect.configure do |c|
+      c.auth_path = :instagram_login
+      c.app_id = "APPID"
+      c.app_secret = "SECRET"
+      c.verify_token = "VERIFY"
+    end
+
     InstagramConnect::Message.delete_all
     InstagramConnect::Conversation.delete_all
     InstagramConnect::Comment.delete_all
     InstagramConnect::InboundMessage.delete_all
     InstagramConnect::Account.delete_all
+
     if ActiveJob::Base.queue_adapter.respond_to?(:enqueued_jobs)
       ActiveJob::Base.queue_adapter.enqueued_jobs.clear
       ActiveJob::Base.queue_adapter.performed_jobs.clear
