@@ -1,4 +1,5 @@
 require "simplecov"
+require "webmock/rspec"
 
 SimpleCov.start do
   enable_coverage :branch
@@ -10,6 +11,14 @@ SimpleCov.start do
   tracked = %w[
     /lib/instagram_connect/result.rb
     /lib/instagram_connect/errors.rb
+    /lib/instagram_connect/auth/strategy.rb
+    /lib/instagram_connect/auth/instagram_login.rb
+    /lib/instagram_connect/auth/facebook_login.rb
+    /lib/instagram_connect/auth.rb
+    /lib/instagram_connect/client.rb
+    /lib/instagram_connect/connect.rb
+    /app/models/instagram_connect/account.rb
+    /app/jobs/instagram_connect/refresh_tokens_job.rb
   ]
   add_filter do |source_file|
     tracked.none? { |file| source_file.filename.end_with?(file) }
