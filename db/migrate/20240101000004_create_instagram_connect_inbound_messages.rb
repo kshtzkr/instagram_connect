@@ -1,4 +1,4 @@
-class CreateInstagramConnectInboundMessages < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+class CreateInstagramConnectInboundMessages < ActiveRecord::Migration[7.1]
   def change
     create_table :instagram_connect_inbound_messages do |t|
       t.string :ig_message_id, null: false

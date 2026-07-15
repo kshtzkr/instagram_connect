@@ -12,6 +12,26 @@ module InstagramConnect
   class Configuration
     AUTH_PATHS = %i[instagram_login facebook_login].freeze
 
+    # The gem ships a complete, self-styled UI. A host tints it to its brand by
+    # overriding any of these via `config.theme = { primary: "#0057a8", ... }` —
+    # no CSS or view files needed in the host app.
+    DEFAULT_THEME = {
+      primary: "#2563eb",
+      primary_contrast: "#ffffff",
+      bg: "#f7f8fa",
+      surface: "#ffffff",
+      text: "#111827",
+      muted: "#6b7280",
+      border: "#e5e7eb",
+      radius: "12px",
+      font: "Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
+      customer_bubble: "#f1f3f5",
+      staff_bubble: "#eef2ff",
+      ok: "#16a34a",
+      warn: "#d97706",
+      err: "#dc2626"
+    }.freeze
+
     attr_accessor :app_id, :app_secret, :verify_token,
                   :graph_version, :redirect_uri, :encrypt_tokens,
                   :parent_controller, :authenticate_with, :current_user_id_resolver,
@@ -19,6 +39,7 @@ module InstagramConnect
                   :logger, :default_per_page, :inherit_host_layout,
                   :media_max_bytes, :allowed_media_types, :after_connect_redirect
     attr_reader :auth_path
+    attr_writer :theme
 
     def initialize
       @auth_path = (ENV["INSTAGRAM_CONNECT_AUTH_PATH"] || "instagram_login").to_sym
@@ -36,7 +57,12 @@ module InstagramConnect
       @on_postback = nil
       @logger = Logger.new($stdout)
       @default_per_page = 25
-      @inherit_host_layout = true
+      # Default false: the gem renders in its own self-contained layout (its own
+      # chrome + styles), like an admin engine. Set true to render inside the
+      # host's application layout instead (then include the gem styles in your
+      # <head> via `instagram_connect_styles`).
+      @inherit_host_layout = false
+      @theme = {}
       # Where the OAuth callback redirects after connecting an account.
       @after_connect_redirect = "/"
       @media_max_bytes = 25 * 1024 * 1024
@@ -50,6 +76,11 @@ module InstagramConnect
     # config hash or ENV.
     def auth_path=(value)
       @auth_path = value&.to_sym
+    end
+
+    # The host's theme overrides merged over the gem defaults.
+    def resolved_theme
+      DEFAULT_THEME.merge(@theme || {})
     end
 
     # Called by .configure at boot. Validates only structural config (a known

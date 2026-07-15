@@ -1,19 +1,28 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Instagram — instagram_connect</title>
+    <title>Instagram</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <%= csrf_meta_tags %>
+    <%= csp_meta_tag if respond_to?(:csp_meta_tag) %>
+    <%= instagram_connect_styles %>
     <%= yield :head %>
   </head>
   <body class="ic-body">
-    <nav class="ic-nav">
-      <%= link_to "Inbox", conversations_path, class: "ic-nav__link" %>
-      <%= link_to "Comments", comments_path, class: "ic-nav__link" %>
-      <%= link_to "Publish", posts_path, class: "ic-nav__link" %>
-    </nav>
-    <% if flash[:notice] %><p class="ic-flash ic-flash--notice"><%= flash[:notice] %></p><% end %>
-    <% if flash[:alert] %><p class="ic-flash ic-flash--alert"><%= flash[:alert] %></p><% end %>
-    <main class="ic-main"><%= yield %></main>
+    <div class="ic-app">
+      <header class="ic-appbar">
+        <span class="ic-appbar__brand">Instagram</span>
+        <nav class="ic-appbar__nav">
+          <%= link_to "Inbox", conversations_path %>
+          <%= link_to "Comments", comments_path %>
+          <%= link_to "Publish", posts_path %>
+        </nav>
+      </header>
+
+      <% if flash[:notice] %><p class="ic-flash ic-flash--notice"><%= flash[:notice] %></p><% end %>
+      <% if flash[:alert] %><p class="ic-flash ic-flash--alert"><%= flash[:alert] %></p><% end %>
+
+      <main class="ic-main"><%= yield %></main>
+    </div>
   </body>
 </html>

@@ -11,25 +11,35 @@ InstagramConnect.configure do |config|
   # Pin the Graph API version.
   config.graph_version = "v21.0"
 
-  # Rails integration.
+  # Rails integration. The engine's controllers inherit this controller, so they
+  # pick up its authentication before_actions automatically.
   config.parent_controller = "ApplicationController"
 
-  # Require operators to be signed in to use the inbox (runs in controller
-  # context — call your host auth here):
+  # Require operators to be signed in (runs in controller context — call your
+  # host auth here):
   # config.authenticate_with = -> { authenticate_user! }
 
   # Attribute outbound replies to the current operator:
   # config.current_user_id_resolver = -> { current_user&.id }
 
   # Where the OAuth callback returns after connecting an account.
-  config.after_connect_redirect = "/instagram"
+  config.after_connect_redirect = "/instagram/conversations"
+
+  # The gem ships a complete, self-styled UI. Tint it to your brand here — no
+  # CSS or view files needed in your app. Any subset of keys is merged over the
+  # gem defaults:
+  # config.theme = {
+  #   primary: "#2563eb",
+  #   font:    "Inter, system-ui, sans-serif",
+  #   radius:  "12px"
+  # }
 
   # Optional host hooks — react to inbound events (notifications, AI, …):
   # config.on_message = ->(message) { }
   # config.on_comment = ->(comment) { }
 
   # Access tokens are encrypted at rest via Active Record Encryption. Run
-  # `bin/rails db:encryption:init` once, or set this to false if your app has
-  # no encryption configured (tokens will be stored in plain text).
+  # `bin/rails db:encryption:init` once, or set this to false if your app has no
+  # encryption configured.
   # config.encrypt_tokens = false
 end

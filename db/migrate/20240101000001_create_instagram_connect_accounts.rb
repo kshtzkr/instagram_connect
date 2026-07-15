@@ -1,4 +1,4 @@
-class CreateInstagramConnectAccounts < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+class CreateInstagramConnectAccounts < ActiveRecord::Migration[7.1]
   def change
     create_table :instagram_connect_accounts do |t|
       t.string :auth_path, null: false

@@ -1,4 +1,4 @@
-class CreateInstagramConnectConversations < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+class CreateInstagramConnectConversations < ActiveRecord::Migration[7.1]
   def change
     create_table :instagram_connect_conversations do |t|
       t.bigint :account_id, null: false

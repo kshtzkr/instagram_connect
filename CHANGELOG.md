@@ -4,7 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [0.1.1]
+## [0.2.0]
+
+True plug-and-play: the gem now owns the data model and the UI, so a host adds
+**only configuration** — no copied migrations, views, or CSS.
+
+### Changed
+- **Migrations ship in the gem** (`db/migrate`) and run in place via an appended
+  migration path — the host just runs `bin/rails db:migrate`. The install
+  generator no longer copies migrations. The gem owns the schema, versioned with it.
+- **Self-contained, themeable UI.** The gem ships its own layout + stylesheet and
+  renders in its own chrome by default (`inherit_host_layout` now defaults to
+  `false`, like an admin engine). Tint it entirely from the initializer via
+  `config.theme = { primary:, font:, radius:, … }` (merged over sensible defaults) —
+  no CSS or views in the host app.
 
 ### Fixed
 - Enable `encrypts :access_token` at runtime via an engine `to_prepare` hook, so
