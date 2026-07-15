@@ -1,0 +1,6 @@
+#!/usr/bin/env ruby
+
+require "instagram_connect"
+require "instagram_connect/cli"
+
+InstagramConnect::CLI.start(ARGV)

@@ -12,6 +12,7 @@ require_relative "instagram_connect/connect"
 require_relative "instagram_connect/signature_verifier"
 require_relative "instagram_connect/messaging_window"
 require_relative "instagram_connect/ingest"
+require_relative "instagram_connect/doctor"
 
 # InstagramConnect connects a Rails app to Instagram over the official Meta
 # Graph API: receive and reply to DMs and comments in real time via

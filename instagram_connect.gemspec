@@ -18,7 +18,9 @@ Gem::Specification.new do |spec|
   spec.metadata["bug_tracker_uri"] = "https://github.com/kshtzkr/instagram_connect/issues"
   spec.metadata["rubygems_mfa_required"] = "true"
 
-  spec.files = Dir.glob("{app,config,lib,docs,.github}/**/*") + %w[README.md CHANGELOG.md MIT-LICENSE LICENSE.txt Gemfile Rakefile .rspec]
+  spec.files = Dir.glob("{app,bin,config,lib,docs,.github}/**/*") + %w[README.md CHANGELOG.md MIT-LICENSE LICENSE.txt Gemfile Rakefile .rspec]
+  spec.bindir = "bin"
+  spec.executables = [ "instagram_connect" ]
   spec.require_paths = [ "lib" ]
 
   spec.add_dependency "rails", ">= 7.1"
