@@ -1,0 +1,17 @@
+class CreateInstagramConnectComments < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+  def change
+    create_table :instagram_connect_comments do |t|
+      t.bigint :account_id, null: false
+      t.string :media_id
+      t.string :comment_id, null: false
+      t.string :parent_id
+      t.string :from_username
+      t.text :text
+      t.datetime :hidden_at
+      t.datetime :replied_at
+      t.timestamps
+    end
+    add_index :instagram_connect_comments, :comment_id, unique: true
+    add_index :instagram_connect_comments, :account_id
+  end
+end

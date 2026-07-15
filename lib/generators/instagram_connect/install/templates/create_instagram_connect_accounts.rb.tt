@@ -1,0 +1,16 @@
+class CreateInstagramConnectAccounts < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+  def change
+    create_table :instagram_connect_accounts do |t|
+      t.string :auth_path, null: false
+      t.string :ig_user_id, null: false
+      t.string :page_id
+      t.string :username
+      t.text :access_token
+      t.datetime :token_expires_at
+      t.boolean :active, default: true, null: false
+      t.bigint :connected_by_id
+      t.timestamps
+    end
+    add_index :instagram_connect_accounts, :ig_user_id, unique: true
+  end
+end

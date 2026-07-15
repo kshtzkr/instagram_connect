@@ -1,0 +1,35 @@
+InstagramConnect.configure do |config|
+  # Which Meta login path to use:
+  #   :instagram_login  — graph.instagram.com, no Facebook Page required
+  #   :facebook_login   — graph.facebook.com, requires a linked Facebook Page
+  config.auth_path = :instagram_login
+
+  config.app_id       = Rails.application.credentials.dig(:instagram_connect, :app_id) || ENV["INSTAGRAM_APP_ID"]
+  config.app_secret   = Rails.application.credentials.dig(:instagram_connect, :app_secret) || ENV["INSTAGRAM_APP_SECRET"]
+  config.verify_token = Rails.application.credentials.dig(:instagram_connect, :verify_token) || ENV["INSTAGRAM_VERIFY_TOKEN"]
+
+  # Pin the Graph API version.
+  config.graph_version = "v21.0"
+
+  # Rails integration.
+  config.parent_controller = "ApplicationController"
+
+  # Require operators to be signed in to use the inbox (runs in controller
+  # context — call your host auth here):
+  # config.authenticate_with = -> { authenticate_user! }
+
+  # Attribute outbound replies to the current operator:
+  # config.current_user_id_resolver = -> { current_user&.id }
+
+  # Where the OAuth callback returns after connecting an account.
+  config.after_connect_redirect = "/instagram"
+
+  # Optional host hooks — react to inbound events (notifications, AI, …):
+  # config.on_message = ->(message) { }
+  # config.on_comment = ->(comment) { }
+
+  # Access tokens are encrypted at rest via Active Record Encryption. Run
+  # `bin/rails db:encryption:init` once, or set this to false if your app has
+  # no encryption configured (tokens will be stored in plain text).
+  # config.encrypt_tokens = false
+end

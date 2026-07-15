@@ -1,0 +1,11 @@
+class CreateInstagramConnectInboundMessages < ActiveRecord::Migration[<%= ActiveRecord::Migration.current_version %>]
+  def change
+    create_table :instagram_connect_inbound_messages do |t|
+      t.string :ig_message_id, null: false
+      t.bigint :account_id
+      t.datetime :processed_at
+      t.timestamps
+    end
+    add_index :instagram_connect_inbound_messages, :ig_message_id, unique: true
+  end
+end

@@ -1,0 +1,17 @@
+<section class="ic-publish">
+  <h1 class="ic-publish__title">Publish a post</h1>
+
+  <%= form_with url: posts_path, method: :post, class: "ic-publish__form" do |f| %>
+    <div class="ic-field">
+      <%= f.label :image_url, "Image URL (public HTTPS)" %>
+      <%= f.url_field :image_url, required: true, class: "ic-field__input" %>
+    </div>
+    <div class="ic-field">
+      <%= f.label :caption %>
+      <%= f.text_area :caption, rows: 3, class: "ic-field__input" %>
+    </div>
+    <%= f.submit "Publish", class: "ic-publish__submit" %>
+  <% end %>
+
+  <p class="ic-publish__hint">The image must be reachable at a public HTTPS URL at publish time.</p>
+</section>

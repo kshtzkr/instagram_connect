@@ -17,7 +17,7 @@ module InstagramConnect
                   :parent_controller, :authenticate_with, :current_user_id_resolver,
                   :on_message, :on_comment, :on_postback,
                   :logger, :default_per_page, :inherit_host_layout,
-                  :media_max_bytes, :allowed_media_types
+                  :media_max_bytes, :allowed_media_types, :after_connect_redirect
     attr_reader :auth_path
 
     def initialize
@@ -37,6 +37,8 @@ module InstagramConnect
       @logger = Logger.new($stdout)
       @default_per_page = 25
       @inherit_host_layout = true
+      # Where the OAuth callback redirects after connecting an account.
+      @after_connect_redirect = "/"
       @media_max_bytes = 25 * 1024 * 1024
       @allowed_media_types = %w[
         image/jpeg image/png image/gif image/webp
