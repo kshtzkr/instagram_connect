@@ -21,5 +21,8 @@ InstagramConnect::Engine.routes.draw do
     end
   end
 
+  # Publishing.
+  resources :posts, only: %i[index new create]
+
   root to: "conversations#index"
 end

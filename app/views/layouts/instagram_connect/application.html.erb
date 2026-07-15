@@ -7,6 +7,11 @@
     <%= yield :head %>
   </head>
   <body class="ic-body">
+    <nav class="ic-nav">
+      <%= link_to "Inbox", conversations_path, class: "ic-nav__link" %>
+      <%= link_to "Comments", comments_path, class: "ic-nav__link" %>
+      <%= link_to "Publish", posts_path, class: "ic-nav__link" %>
+    </nav>
     <% if flash[:notice] %><p class="ic-flash ic-flash--notice"><%= flash[:notice] %></p><% end %>
     <% if flash[:alert] %><p class="ic-flash ic-flash--alert"><%= flash[:alert] %></p><% end %>
     <main class="ic-main"><%= yield %></main>

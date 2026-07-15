@@ -1,0 +1,23 @@
+<section class="ic-posts">
+  <h1 class="ic-posts__title">Your posts</h1>
+  <p class="ic-posts__actions"><%= link_to "Publish a post", new_post_path, class: "ic-posts__new" %></p>
+
+  <% if @quota_usage %>
+    <p class="ic-posts__quota">Published in the last 24 hours: <%= @quota_usage %> / 100</p>
+  <% end %>
+
+  <% if @media.any? %>
+    <ul class="ic-posts__list" id="instagram_connect_media">
+      <% @media.each do |item| %>
+        <li class="ic-post" id="ic-media-<%= item["id"] %>">
+          <span class="ic-post__caption"><%= item["caption"] %></span>
+          <% if item["permalink"].present? %>
+            <%= link_to "View on Instagram", item["permalink"], class: "ic-post__link" %>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="ic-empty">No posts published through the API yet.</p>
+  <% end %>
+</section>
