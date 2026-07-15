@@ -4,7 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
-## [0.1.0] — Unreleased
+## [0.1.1]
+
+### Fixed
+- Enable `encrypts :access_token` at runtime via an engine `to_prepare` hook, so
+  access tokens are encrypted at rest in host apps. Previously the decoration only
+  ran in the gem's own test suite, so a host stored tokens in plain text. Opt out
+  with `config.encrypt_tokens = false`.
+
+## [0.1.0]
 
 Initial release. A mountable Rails engine for Instagram over the official Meta Graph API.
 

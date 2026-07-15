@@ -24,5 +24,14 @@ module InstagramConnect
         end
       end
     end
+
+    # Enable at-rest token encryption on boot (and re-apply on each dev reload,
+    # since the Account class is reloaded fresh). Without this the `encrypts`
+    # decoration never runs in a host app and access tokens persist in plain
+    # text. Opt out with `config.encrypt_tokens = false` (e.g. no Active Record
+    # Encryption configured).
+    config.to_prepare do
+      InstagramConnect::Account.enable_token_encryption! if InstagramConnect.configuration.encrypt_tokens
+    end
   end
 end
