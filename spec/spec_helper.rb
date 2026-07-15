@@ -28,6 +28,8 @@ SimpleCov.start do
     /app/controllers/instagram_connect/webhooks_controller.rb
     /app/controllers/instagram_connect/oauth_controller.rb
     /app/jobs/instagram_connect/ingest_job.rb
+    /lib/instagram_connect/messaging_window.rb
+    /app/jobs/instagram_connect/send_message_job.rb
   ]
   add_filter do |source_file|
     tracked.none? { |file| source_file.filename.end_with?(file) }

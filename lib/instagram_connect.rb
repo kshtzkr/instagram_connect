@@ -10,6 +10,7 @@ require_relative "instagram_connect/auth"
 require_relative "instagram_connect/client"
 require_relative "instagram_connect/connect"
 require_relative "instagram_connect/signature_verifier"
+require_relative "instagram_connect/messaging_window"
 require_relative "instagram_connect/ingest"
 
 # InstagramConnect connects a Rails app to Instagram over the official Meta
