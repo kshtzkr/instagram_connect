@@ -1,0 +1,15 @@
+<% if window.open? %>
+  <%= form_with url: conversation_messages_path(conversation), method: :post, class: "ic-composer" do |f| %>
+    <%= f.text_area :body, class: "ic-composer__input", placeholder: "Write a reply…", rows: 2 %>
+    <% if window.state == :human_agent %>
+      <p class="ic-composer__note">
+        Outside the 24-hour window — this reply is sent under the human-agent tag (valid up to 7 days).
+      </p>
+    <% end %>
+    <%= f.submit "Send", class: "ic-composer__send" %>
+  <% end %>
+<% else %>
+  <p class="ic-composer__closed">
+    The reply window has closed. The customer must message you again before you can reply.
+  </p>
+<% end %>

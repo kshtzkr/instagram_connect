@@ -1,0 +1,11 @@
+<section class="ic-inbox">
+  <h1 class="ic-inbox__title">Instagram inbox</h1>
+
+  <% if @conversations.any? %>
+    <ul class="ic-conversations" id="instagram_connect_conversations">
+      <%= render @conversations %>
+    </ul>
+  <% else %>
+    <p class="ic-empty">No conversations yet. They appear here as soon as someone messages your account.</p>
+  <% end %>
+</section>

@@ -33,6 +33,10 @@ module Dummy
     config.logger = Logger.new(IO::NULL)
     config.cache_store = :null_store
     config.instagram_connect = {}
+    # The dummy app's root is the gem dir, so without this it would load the
+    # gem's own config/routes.rb as its app routes (double-drawing the engine
+    # routes and colliding on named routes). Routes are drawn manually below.
+    config.paths["config/routes.rb"] = []
   end
 end
 
@@ -140,6 +144,7 @@ RSpec.configure do |config|
       c.app_id = "APPID"
       c.app_secret = "SECRET"
       c.verify_token = "VERIFY"
+      c.inherit_host_layout = false
     end
 
     InstagramConnect::Message.delete_all

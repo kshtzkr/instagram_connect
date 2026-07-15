@@ -6,8 +6,15 @@ module InstagramConnect
   # from this — it authenticates by HMAC, not by host session.
   class ApplicationController < InstagramConnect.configuration.parent_controller.constantize
     before_action :authenticate_instagram_connect!
+    layout :instagram_connect_layout
 
     private
+
+    # Use the host's application layout by default (so the inbox looks native),
+    # or the engine's own bundled layout when the host opts out.
+    def instagram_connect_layout
+      InstagramConnect.configuration.inherit_host_layout ? "application" : "instagram_connect/application"
+    end
 
     def authenticate_instagram_connect!
       handler = InstagramConnect.configuration.authenticate_with

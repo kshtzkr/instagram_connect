@@ -6,4 +6,11 @@ InstagramConnect::Engine.routes.draw do
   # OAuth connect flow.
   get "oauth/start", to: "oauth#start"
   get "oauth/callback", to: "oauth#callback"
+
+  # DM inbox.
+  resources :conversations, only: %i[index show] do
+    resources :messages, only: :create
+  end
+
+  root to: "conversations#index"
 end

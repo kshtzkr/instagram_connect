@@ -1,0 +1,12 @@
+<section class="ic-thread-view">
+  <p class="ic-thread-view__back"><%= link_to "← Inbox", conversations_path %></p>
+  <h1 class="ic-thread-view__title">
+    <%= @conversation.display_name.presence || @conversation.username.presence || @conversation.igsid %>
+  </h1>
+
+  <div class="ic-thread" id="instagram_connect_messages">
+    <%= render partial: "message", collection: @messages, as: :message %>
+  </div>
+
+  <%= render "composer", conversation: @conversation, window: @window %>
+</section>

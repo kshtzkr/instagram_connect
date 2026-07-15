@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Instagram — instagram_connect</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <%= csrf_meta_tags %>
+    <%= yield :head %>
+  </head>
+  <body class="ic-body">
+    <% if flash[:notice] %><p class="ic-flash ic-flash--notice"><%= flash[:notice] %></p><% end %>
+    <% if flash[:alert] %><p class="ic-flash ic-flash--alert"><%= flash[:alert] %></p><% end %>
+    <main class="ic-main"><%= yield %></main>
+  </body>
+</html>

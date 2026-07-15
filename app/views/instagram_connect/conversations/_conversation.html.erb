@@ -1,0 +1,11 @@
+<li class="ic-conversation" id="<%= dom_id(conversation) %>">
+  <%= link_to conversation_path(conversation), class: "ic-conversation__link" do %>
+    <span class="ic-conversation__name">
+      <%= conversation.display_name.presence || conversation.username.presence || conversation.igsid %>
+    </span>
+    <span class="ic-conversation__preview"><%= conversation.last_message_preview %></span>
+    <% if conversation.unread_count.positive? %>
+      <span class="ic-conversation__unread"><%= conversation.unread_count %></span>
+    <% end %>
+  <% end %>
+</li>

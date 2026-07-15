@@ -1,0 +1,6 @@
+<div class="ic-message ic-message--<%= message.direction %>" id="<%= dom_id(message) %>">
+  <div class="ic-message__body"><%= message.body.presence || "[#{message.kind}]" %></div>
+  <span class="ic-message__meta">
+    <%= message.status %><%= " · #{message.failure_reason}" if message.failure_reason.present? %>
+  </span>
+</div>
