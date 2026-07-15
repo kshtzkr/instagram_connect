@@ -1,6 +1,6 @@
 class CreateInstagramConnectConversations < ActiveRecord::Migration[7.1]
   def change
-    create_table :instagram_connect_conversations do |t|
+    create_table :instagram_connect_conversations, if_not_exists: true do |t|
       t.bigint :account_id, null: false
       t.string :igsid, null: false
       t.string :username
@@ -11,6 +11,6 @@ class CreateInstagramConnectConversations < ActiveRecord::Migration[7.1]
       t.integer :unread_count, default: 0, null: false
       t.timestamps
     end
-    add_index :instagram_connect_conversations, [ :account_id, :igsid ], unique: true
+    add_index :instagram_connect_conversations, [ :account_id, :igsid ], unique: true, if_not_exists: true
   end
 end

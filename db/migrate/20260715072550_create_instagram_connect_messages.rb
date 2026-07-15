@@ -1,6 +1,6 @@
 class CreateInstagramConnectMessages < ActiveRecord::Migration[7.1]
   def change
-    create_table :instagram_connect_messages do |t|
+    create_table :instagram_connect_messages, if_not_exists: true do |t|
       t.bigint :conversation_id, null: false
       t.string :direction, null: false
       t.string :status, null: false
@@ -19,7 +19,7 @@ class CreateInstagramConnectMessages < ActiveRecord::Migration[7.1]
       t.string :failure_reason
       t.timestamps
     end
-    add_index :instagram_connect_messages, :conversation_id
-    add_index :instagram_connect_messages, :ig_message_id, unique: true
+    add_index :instagram_connect_messages, :conversation_id, if_not_exists: true
+    add_index :instagram_connect_messages, :ig_message_id, unique: true, if_not_exists: true
   end
 end
