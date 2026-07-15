@@ -4,6 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [0.2.1]
+
+### Fixed
+- Migrations are now idempotent (`create_table` / `add_index` with `if_not_exists: true`),
+  so `db:migrate` / `db:prepare` succeeds on a database that already has the tables —
+  e.g. an existing deploy, or one set up via `db:schema:load`. Previously a redeploy
+  could fail with `PG::DuplicateTable`.
+
 ## [0.2.0]
 
 True plug-and-play: the gem now owns the data model and the UI, so a host adds

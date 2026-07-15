@@ -1,6 +1,6 @@
 class CreateInstagramConnectAccounts < ActiveRecord::Migration[7.1]
   def change
-    create_table :instagram_connect_accounts do |t|
+    create_table :instagram_connect_accounts, if_not_exists: true do |t|
       t.string :auth_path, null: false
       t.string :ig_user_id, null: false
       t.string :page_id
@@ -11,6 +11,6 @@ class CreateInstagramConnectAccounts < ActiveRecord::Migration[7.1]
       t.bigint :connected_by_id
       t.timestamps
     end
-    add_index :instagram_connect_accounts, :ig_user_id, unique: true
+    add_index :instagram_connect_accounts, :ig_user_id, unique: true, if_not_exists: true
   end
 end
