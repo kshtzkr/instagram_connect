@@ -1,0 +1,11 @@
+<section class="ic-comments">
+  <h1 class="ic-comments__title">Comments</h1>
+
+  <% if @comments.any? %>
+    <ul class="ic-comments__list" id="instagram_connect_comments">
+      <%= render partial: "comment", collection: @comments, as: :comment %>
+    </ul>
+  <% else %>
+    <p class="ic-empty">No comments captured yet. They appear here as people comment on your posts.</p>
+  <% end %>
+</section>

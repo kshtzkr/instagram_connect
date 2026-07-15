@@ -12,5 +12,14 @@ InstagramConnect::Engine.routes.draw do
     resources :messages, only: :create
   end
 
+  # Comment moderation.
+  resources :comments, only: %i[index destroy] do
+    member do
+      post :reply
+      post :hide
+      post :unhide
+    end
+  end
+
   root to: "conversations#index"
 end

@@ -1,0 +1,19 @@
+<li class="ic-comment <%= 'ic-comment--hidden' if comment.hidden? %>" id="<%= dom_id(comment) %>">
+  <span class="ic-comment__author"><%= comment.from_username %></span>
+  <span class="ic-comment__text"><%= comment.text %></span>
+
+  <div class="ic-comment__actions">
+    <%= form_with url: reply_comment_path(comment), method: :post, class: "ic-comment__reply" do |f| %>
+      <%= f.text_field :text, placeholder: "Reply…", class: "ic-comment__reply-input" %>
+      <%= f.submit "Reply" %>
+    <% end %>
+
+    <% if comment.hidden? %>
+      <%= button_to "Unhide", unhide_comment_path(comment), method: :post %>
+    <% else %>
+      <%= button_to "Hide", hide_comment_path(comment), method: :post %>
+    <% end %>
+
+    <%= button_to "Delete", comment_path(comment), method: :delete, data: { turbo_confirm: "Delete this comment?" } %>
+  </div>
+</li>
