@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/) and the project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Documentation
+- Rewrote the README with a badge row, table of contents, a quick start, and a
+  usage section per feature (webhooks and signature verification, the messaging
+  window, comment moderation, publishing, the Graph client, background jobs, the
+  UI and theming, and the CLI).
+- Added `docs/CONFIGURATION.md`, a full reference for every `Configuration`
+  setting with its type, default, and environment-variable fallback.
+- Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1), and
+  `SECURITY.md`.
+- Removed the duplicate `MIT-LICENSE` file, keeping `LICENSE.txt` as the single
+  license, and updated the gemspec `files` list to match.
+
 ## [0.2.1]
 
 ### Fixed
