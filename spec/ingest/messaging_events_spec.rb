@@ -212,6 +212,28 @@ RSpec.describe "messaging event ingest" do
       expect(message.media_kind).to eq("story_mention")
     end
 
+    it "creates one attachment row per file and a fetch job for each fetchable one" do
+      run({ "sender" => { "id" => "CUST" }, "recipient" => { "id" => "IGACC" },
+            "message" => { "mid" => "m1", "attachments" => [
+              { "type" => "image", "payload" => { "url" => "https://cdn.example/1.jpg" } },
+              { "type" => "video", "payload" => { "url" => "https://cdn.example/2.mp4" } },
+              { "type" => "share", "payload" => {} }
+            ] } })
+
+      attachments = InstagramConnect::Message.last.attachments
+      expect(attachments.map(&:position)).to eq([ 0, 1, 2 ])
+      expect(attachments.map(&:kind)).to eq(%w[image video share])
+      # The one with nothing to fetch is skipped rather than left pending, so it
+      # never renders as a placeholder waiting on bytes that will not arrive.
+      expect(attachments.map(&:state)).to eq(%w[pending pending skipped])
+
+      # One job per attachment, so a ten-image message does not serialise behind
+      # whichever file is slowest.
+      enqueued = ActiveJob::Base.queue_adapter.enqueued_jobs
+        .select { |job| job[:job] == InstagramConnect::FetchMediaJob }
+      expect(enqueued.size).to eq(2)
+    end
+
     it "keeps an unsent message as a row rather than destroying the thread's shape" do
       run({ "sender" => { "id" => "CUST" }, "recipient" => { "id" => "IGACC" },
             "message" => { "mid" => "m1", "text" => "oops", "is_deleted" => true } })

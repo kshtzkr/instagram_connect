@@ -26,4 +26,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "rails", ">= 7.1"
   spec.add_dependency "httparty", ">= 0.21"
   spec.add_dependency "thor", ">= 1.0"
+  # Magic-byte MIME detection for inbound media. Declared explicitly rather than
+  # leaned on via Active Storage, because the sniff runs whether or not the host
+  # has Active Storage installed.
+  spec.add_dependency "marcel", ">= 1.0"
 end

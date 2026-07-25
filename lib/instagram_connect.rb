@@ -10,6 +10,9 @@ require_relative "instagram_connect/auth"
 require_relative "instagram_connect/client"
 require_relative "instagram_connect/connect"
 require_relative "instagram_connect/signature_verifier"
+require_relative "instagram_connect/media/limits"
+require_relative "instagram_connect/media/attaching"
+require_relative "instagram_connect/text_splitter"
 require_relative "instagram_connect/messaging_window"
 require_relative "instagram_connect/ingest"
 require_relative "instagram_connect/doctor"
@@ -36,6 +39,7 @@ module InstagramConnect
     instagram_connect_comments
     instagram_connect_webhook_events
     instagram_connect_message_reactions
+    instagram_connect_message_attachments
   ].freeze
 
   class << self
