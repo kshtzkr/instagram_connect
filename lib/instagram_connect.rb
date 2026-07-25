@@ -25,6 +25,17 @@ require_relative "instagram_connect/doctor"
 #     c.verify_token = Rails.application.credentials.dig(:instagram_connect, :verify_token)
 #   end
 module InstagramConnect
+  # Every table the gem's migrations own, in dependency order (parents first).
+  # Hosts use it to audit what the engine added to their schema; the suite uses
+  # it to assert the migrations actually built what the models expect.
+  TABLES = %w[
+    instagram_connect_accounts
+    instagram_connect_conversations
+    instagram_connect_messages
+    instagram_connect_inbound_messages
+    instagram_connect_comments
+  ].freeze
+
   class << self
     def configuration
       @configuration ||= Configuration.new

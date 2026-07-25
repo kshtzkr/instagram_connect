@@ -60,77 +60,20 @@ end
 class ApplicationController < ActionController::Base
 end
 
-ActiveRecord::Base.establish_connection(adapter: "sqlite3", database: ":memory:")
-ActiveRecord::Schema.verbose = false
-ActiveRecord::Schema.define do
-  create_table :instagram_connect_accounts, force: true do |t|
-    t.string :auth_path, null: false
-    t.string :ig_user_id, null: false
-    t.string :page_id
-    t.string :username
-    t.text :access_token
-    t.datetime :token_expires_at
-    t.boolean :active, default: true, null: false
-    t.bigint :connected_by_id
-    t.timestamps
-  end
-  add_index :instagram_connect_accounts, :ig_user_id, unique: true
-
-  create_table :instagram_connect_conversations, force: true do |t|
-    t.bigint :account_id, null: false
-    t.string :igsid, null: false
-    t.string :username
-    t.string :display_name
-    t.datetime :last_message_at
-    t.datetime :last_inbound_at
-    t.string :last_message_preview
-    t.integer :unread_count, default: 0, null: false
-    t.timestamps
-  end
-  add_index :instagram_connect_conversations, [ :account_id, :igsid ], unique: true
-
-  create_table :instagram_connect_messages, force: true do |t|
-    t.bigint :conversation_id, null: false
-    t.string :direction, null: false
-    t.string :status, null: false
-    t.string :kind, default: "dm", null: false
-    t.string :source
-    t.text :body
-    t.string :ig_message_id
-    t.string :message_tag
-    t.bigint :sent_by_id
-    t.string :media_status, default: "none", null: false
-    t.string :media_mime
-    t.string :media_filename
-    t.integer :media_size
-    t.string :media_error
-    t.string :error_message
-    t.string :failure_reason
-    t.timestamps
-  end
-  add_index :instagram_connect_messages, :ig_message_id, unique: true
-
-  create_table :instagram_connect_inbound_messages, force: true do |t|
-    t.string :ig_message_id, null: false
-    t.bigint :account_id
-    t.datetime :processed_at
-    t.timestamps
-  end
-  add_index :instagram_connect_inbound_messages, :ig_message_id, unique: true
-
-  create_table :instagram_connect_comments, force: true do |t|
-    t.bigint :account_id, null: false
-    t.string :media_id
-    t.string :comment_id, null: false
-    t.string :parent_id
-    t.string :from_username
-    t.text :text
-    t.datetime :hidden_at
-    t.datetime :replied_at
-    t.timestamps
-  end
-  add_index :instagram_connect_comments, :comment_id, unique: true
-end
+# The schema comes from the gem's own db/migrate — the same files a host app
+# runs. A hand-maintained duplicate here would drift, and worse, it would hide
+# adapter-specific DDL bugs: the migrations would never actually execute in CI,
+# so a Postgres-only construct would only surface in an adopter's deploy.
+#
+# INSTAGRAM_CONNECT_TEST_DATABASE_URL switches the suite onto a real database
+# (CI runs it against Postgres). Unset, it is in-memory SQLite so a contributor
+# needs no services.
+ActiveRecord::Base.establish_connection(
+  ENV["INSTAGRAM_CONNECT_TEST_DATABASE_URL"].presence || { adapter: "sqlite3", database: ":memory:" }
+)
+ActiveRecord::Migration.verbose = false
+INSTAGRAM_CONNECT_MIGRATION_PATH = File.expand_path("../db/migrate", __dir__)
+ActiveRecord::MigrationContext.new(INSTAGRAM_CONNECT_MIGRATION_PATH).migrate
 
 # Note: token encryption is enabled by the engine's to_prepare hook during
 # Dummy::Application.initialize! above — no manual call needed here.
@@ -141,7 +84,9 @@ RSpec.configure do |config|
   config.use_transactional_fixtures = false if config.respond_to?(:use_transactional_fixtures=)
 
   # Re-apply a known gem configuration each example (the global spec_helper
-  # after-hook resets it) and clear the in-memory tables.
+  # after-hook resets it) and clear the tables. Examples do not run in a
+  # transaction, so this is what keeps them isolated — and on a real database
+  # it is what stops one example's rows leaking into the next.
   config.before do
     InstagramConnect.configure do |c|
       c.auth_path = :instagram_login
@@ -151,6 +96,8 @@ RSpec.configure do |config|
       c.inherit_host_layout = false
     end
 
+    # Child-first so a foreign key (if an adopter's database enforces one)
+    # never blocks the delete.
     InstagramConnect::Message.delete_all
     InstagramConnect::Conversation.delete_all
     InstagramConnect::Comment.delete_all

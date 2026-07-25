@@ -4,45 +4,24 @@ require "webmock/rspec"
 SimpleCov.start do
   enable_coverage :branch
 
-  # Enforce 100% on the gem's business-logic files. Framework glue (engine,
-  # railtie, configuration defaults) and generated views/templates are excluded
-  # from the gate, matching the house convention (see rails-contact). The list
-  # grows as each build phase adds logic.
-  tracked = %w[
-    /lib/instagram_connect/result.rb
-    /lib/instagram_connect/errors.rb
-    /lib/instagram_connect/auth/strategy.rb
-    /lib/instagram_connect/auth/instagram_login.rb
-    /lib/instagram_connect/auth/facebook_login.rb
-    /lib/instagram_connect/auth.rb
-    /lib/instagram_connect/client.rb
-    /lib/instagram_connect/connect.rb
-    /app/models/instagram_connect/account.rb
-    /app/jobs/instagram_connect/refresh_tokens_job.rb
-    /lib/instagram_connect/signature_verifier.rb
-    /lib/instagram_connect/ingest.rb
-    /app/models/instagram_connect/conversation.rb
-    /app/models/instagram_connect/message.rb
-    /app/models/instagram_connect/inbound_message.rb
-    /app/models/instagram_connect/comment.rb
-    /app/controllers/instagram_connect/webhooks_controller.rb
-    /app/controllers/instagram_connect/oauth_controller.rb
-    /app/jobs/instagram_connect/ingest_job.rb
-    /lib/instagram_connect/messaging_window.rb
-    /app/jobs/instagram_connect/send_message_job.rb
-    /app/controllers/instagram_connect/conversations_controller.rb
-    /app/controllers/instagram_connect/messages_controller.rb
-    /app/controllers/instagram_connect/comments_controller.rb
-    /app/controllers/instagram_connect/posts_controller.rb
-    /lib/instagram_connect/doctor.rb
-  ]
-  add_filter do |source_file|
-    tracked.none? { |file| source_file.filename.end_with?(file) }
-  end
+  # A DENYLIST, deliberately. This was an allowlist of tracked paths, which
+  # meant every new file silently escaped the 100% gate until somebody
+  # remembered to add it — exactly backwards for a gem that is growing.
+  #
+  # Everything here is excluded because it has no branch a spec can meaningfully
+  # exercise, not because it is hard to cover. Adding to this list needs a
+  # reason in the comment; spec/coverage_filters_spec.rb asserts every path
+  # below still exists, so a rename cannot silently start excluding real code.
+  add_filter "/spec/"
+  add_filter "/lib/instagram_connect/version.rb"   # a single constant
+  add_filter "/lib/generators/"                    # Thor generators; covered by generator specs
+                                                   #   driving them end to end, not by line coverage
+  add_filter "/lib/instagram_connect/engine.rb"    # boot-time wiring; exercised by the dummy app
+                                                   #   booting at all, which every spec depends on
+  add_filter "/lib/instagram_connect/railtie.rb"   # the non-engine branch; unreachable under Rails
 
-  minimum_coverage 100
-  minimum_coverage_by_file 100
-  minimum_coverage branch: 100
+  minimum_coverage line: 100, branch: 100
+  minimum_coverage_by_file line: 100, branch: 100
 end
 
 RSpec.configure do |config|
