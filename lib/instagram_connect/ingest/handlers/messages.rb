@@ -37,6 +37,7 @@ module InstagramConnect
             story_id: story&.dig("id"),
             story_url: story&.dig("url")
           )
+          store_attachments(message)
           conversation.register_message(message)
           record_legacy_claim
 
@@ -71,6 +72,30 @@ module InstagramConnect
           return "unavailable" if payload["is_unsupported"]
 
           attachments.any? { |a| a.dig("payload", "url").present? } ? "pending" : "none"
+        end
+
+        # Rows are written in one insert_all so the bubble is born in its final
+        # state: one create, one broadcast, no flicker as files resolve. Each
+        # fetch is its own job, so a ten-image message does not serialise
+        # behind whichever file is slowest.
+        def store_attachments(message)
+          return if attachments.empty?
+
+          rows = attachments.each_with_index.map do |attachment, index|
+            url = attachment.dig("payload", "url")
+            {
+              message_id: message.id, position: index,
+              kind: attachment["type"].presence || "file",
+              source_url: url,
+              state: url.present? ? "pending" : "skipped",
+              created_at: Time.current, updated_at: Time.current
+            }
+          end
+          InstagramConnect::MessageAttachment.insert_all(rows)
+
+          message.attachments.reload.select(&:fetchable?).each do |attachment|
+            InstagramConnect::FetchMediaJob.perform_later(attachment.id)
+          end
         end
 
         # A story reply and a story mention both point at the story they came

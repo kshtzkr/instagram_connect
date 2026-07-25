@@ -5,12 +5,17 @@ module InstagramConnect
 
     DIRECTIONS = %w[inbound outbound].freeze
     STATUSES = %w[received pending sending sent failed].freeze
-    KINDS = %w[dm story_reply reaction].freeze
+    KINDS = %w[dm story_reply story_mention reaction postback share unsupported].freeze
     SOURCES = %w[inbound manual api operator_app].freeze
     MEDIA_STATUSES = %w[none pending downloadable attached unavailable].freeze
     PREVIEW_LIMIT = 140
 
     belongs_to :conversation, class_name: "InstagramConnect::Conversation"
+    has_many :attachments, -> { order(:position) },
+             class_name: "InstagramConnect::MessageAttachment",
+             foreign_key: :message_id, dependent: :destroy
+    has_many :reactions, class_name: "InstagramConnect::MessageReaction",
+             foreign_key: :message_id, dependent: :nullify
 
     validates :direction, inclusion: { in: DIRECTIONS }
     validates :status, inclusion: { in: STATUSES }
@@ -18,7 +23,24 @@ module InstagramConnect
 
     scope :inbound, -> { where(direction: "inbound") }
     scope :outbound, -> { where(direction: "outbound") }
-    scope :chronological, -> { order(:created_at, :id) }
+    # Ordered by Meta's clock, falling back to ours for rows written before
+    # sent_at existed. A webhook batch delayed by a redeploy would otherwise
+    # reorder the thread.
+    scope :chronological, -> { order(Arel.sql("COALESCE(sent_at, created_at)"), :id) }
+
+    # Extension point: a host rendering this record live overrides it to
+    # re-broadcast current state after a callback-free write (update_all, which
+    # the send and media paths both use to stay atomic). A no-op here keeps the
+    # gem free of any Turbo dependency.
+    def broadcast_refresh; end
+
+    def occurred_at
+      sent_at || created_at
+    end
+
+    def deleted?
+      deleted_at.present?
+    end
 
     def inbound?
       direction == "inbound"

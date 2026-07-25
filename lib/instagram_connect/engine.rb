@@ -43,6 +43,7 @@ module InstagramConnect
     # Encryption configured).
     config.to_prepare do
       InstagramConnect::Account.enable_token_encryption! if InstagramConnect.configuration.encrypt_tokens
+      InstagramConnect::MessageAttachment.enable_file_attachment! if defined?(ActiveStorage::Blob)
     end
   end
 end

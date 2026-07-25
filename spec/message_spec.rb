@@ -47,4 +47,44 @@ RSpec.describe InstagramConnect::Message do
       expect(described_class.chronological.to_a).to eq([ i, o ])
     end
   end
+
+  describe "wire fields" do
+    let(:account) do
+      InstagramConnect::Account.create!(ig_user_id: "IGACC", auth_path: "instagram_login", access_token: "t")
+    end
+    let(:conversation) { InstagramConnect::Conversation.locate(account: account, igsid: "CUST") }
+
+    def build(**attrs)
+      conversation.messages.create!(
+        { direction: "inbound", status: "received", kind: "dm" }.merge(attrs)
+      )
+    end
+
+    # Rows written before sent_at existed have only our clock to fall back on.
+    it "prefers Meta's clock and falls back to ours" do
+      wired = build(sent_at: 2.hours.ago)
+      legacy = build(sent_at: nil)
+
+      expect(wired.occurred_at).to eq(wired.sent_at)
+      expect(legacy.occurred_at).to eq(legacy.created_at)
+    end
+
+    it "reports an unsent message without losing the row" do
+      expect(build(deleted_at: Time.current)).to be_deleted
+      expect(build).not_to be_deleted
+    end
+
+    it "orders a thread by the wire clock, not by insertion" do
+      late = build(sent_at: 1.minute.ago, body: "late")
+      early = build(sent_at: 1.hour.ago, body: "early")
+
+      expect(conversation.messages.chronological.map(&:body)).to eq(%w[early late])
+      expect(late).to be_present
+    end
+
+    # The gem never depends on Turbo; a host that renders live overrides this.
+    it "offers a no-op broadcast seam for callback-free writes" do
+      expect(build.broadcast_refresh).to be_nil
+    end
+  end
 end
