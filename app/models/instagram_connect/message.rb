@@ -11,6 +11,10 @@ module InstagramConnect
     PREVIEW_LIMIT = 140
 
     belongs_to :conversation, class_name: "InstagramConnect::Conversation"
+    # Denormalized from the conversation so account-scoped queries and stream
+    # names do not need a join, and so uniqueness can be scoped per account.
+    before_validation :inherit_account_id
+
     has_many :attachments, -> { order(:position) },
              class_name: "InstagramConnect::MessageAttachment",
              foreign_key: :message_id, dependent: :destroy
@@ -54,6 +58,12 @@ module InstagramConnect
     def preview
       return body.to_s.truncate(PREVIEW_LIMIT) if body.present?
       "[#{kind}]"
+    end
+
+    private
+
+    def inherit_account_id
+      self.account_id ||= conversation&.account_id
     end
   end
 end

@@ -62,4 +62,28 @@ RSpec.describe InstagramConnect::Configuration do
       expect { config.validate! }.to raise_error(InstagramConnect::ConfigurationError, /auth_path must be one of/)
     end
   end
+
+  describe "#for_auth_path" do
+    # Accounts store the path they were connected with. The global setting is
+    # the default for new connections, never an override on an existing one —
+    # a host with accounts on both paths would otherwise talk to the wrong
+    # Graph host, silently.
+    it "returns a copy pinned to another path, leaving the original alone" do
+      config.auth_path = :instagram_login
+
+      pinned = config.for_auth_path(:facebook_login)
+
+      expect(pinned.auth_path).to eq(:facebook_login)
+      expect(config.auth_path).to eq(:instagram_login)
+      expect(pinned.app_id).to eq(config.app_id)
+    end
+
+    it "returns itself when the path already matches, or is not given" do
+      config.auth_path = :facebook_login
+
+      expect(config.for_auth_path(:facebook_login)).to be(config)
+      expect(config.for_auth_path("facebook_login")).to be(config)
+      expect(config.for_auth_path(nil)).to be(config)
+    end
+  end
 end

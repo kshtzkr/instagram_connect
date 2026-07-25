@@ -40,7 +40,7 @@ module InstagramConnect
     private
 
     def deliver(message, conversation, tag)
-      client = client_for(conversation.account)
+      client = conversation.account.client
       parts = TextSplitter.split(message.body.to_s)
 
       # Resume rather than restart. A worker killed mid-fan-out has already
@@ -61,10 +61,6 @@ module InstagramConnect
       message.update!(status: "sent", message_tag: tag)
       message.broadcast_refresh
       message
-    end
-
-    def client_for(account)
-      Client.new(access_token: account.access_token, ig_user_id: account.ig_user_id)
     end
 
     def fail_message(message, reason, error)

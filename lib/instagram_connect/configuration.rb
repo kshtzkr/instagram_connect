@@ -41,6 +41,16 @@ module InstagramConnect
     attr_reader :auth_path
     attr_writer :theme
 
+    # A copy of this configuration pinned to one auth path. Accounts store the
+    # path they were connected with, and a host can have both — so the global
+    # setting is the default for *new* connections, never an override on an
+    # existing one.
+    def for_auth_path(path)
+      return self if path.blank? || path.to_sym == auth_path
+
+      dup.tap { |copy| copy.auth_path = path }
+    end
+
     def initialize
       @auth_path = (ENV["INSTAGRAM_CONNECT_AUTH_PATH"] || "instagram_login").to_sym
       @app_id = ENV["INSTAGRAM_CONNECT_APP_ID"] || ENV["INSTAGRAM_APP_ID"]

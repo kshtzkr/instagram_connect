@@ -53,7 +53,7 @@ module InstagramConnect
 
     def client_for(comment)
       account = comment.account
-      Client.new(access_token: account.access_token, ig_user_id: account.ig_user_id)
+      account.client
     end
   end
 end
