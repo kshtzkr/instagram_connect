@@ -55,9 +55,22 @@ RSpec.describe InstagramConnect::Ingest do
       expect(seen_messages).to be_empty
     end
 
-    it "marks messages with attachments as pending media" do
-      run(dm_payload(mid: "m2", sender: "CUST", recipient: "IGACC", text: nil, attachments: [ { "type" => "image" } ]))
-      expect(InstagramConnect::Message.first.media_status).to eq("pending")
+    it "marks a fetchable attachment as pending media and records its wire type" do
+      attachment = { "type" => "image", "payload" => { "url" => "https://cdn.example/a.jpg" } }
+      run(dm_payload(mid: "m2", sender: "CUST", recipient: "IGACC", text: nil, attachments: [ attachment ]))
+
+      message = InstagramConnect::Message.first
+      expect(message.media_status).to eq("pending")
+      expect(message.media_kind).to eq("image")
+    end
+
+    it "does not leave a skeleton pending for an attachment with nothing to fetch" do
+      # Instagram CDN links expire and cannot be re-requested, so an attachment
+      # that arrives without a URL is never going to resolve. Marking it pending
+      # would leave a loading placeholder in the thread forever.
+      run(dm_payload(mid: "m3", sender: "CUST", recipient: "IGACC", text: nil, attachments: [ { "type" => "image" } ]))
+
+      expect(InstagramConnect::Message.first.media_status).to eq("none")
     end
 
     it "skips a duplicate message id" do
@@ -115,10 +128,12 @@ RSpec.describe InstagramConnect::Ingest do
     end
 
     it "banks a messaging event it cannot parse yet, inferring the field from its shape" do
-      payload = { "entry" => [ { "id" => "IGACC", "messaging" => [ { "sender" => { "id" => "CUST" }, "read" => {} } ] } ] }
+      payload = { "entry" => [ { "id" => "IGACC", "messaging" => [
+        { "sender" => { "id" => "CUST" }, "some_future_event" => {} }
+      ] } ] }
 
       expect(run(payload)[:unhandled]).to eq(1)
-      expect(InstagramConnect::WebhookEvent.last.field).to eq("messaging_seen")
+      expect(InstagramConnect::WebhookEvent.last.field).to eq("unknown")
     end
   end
 
