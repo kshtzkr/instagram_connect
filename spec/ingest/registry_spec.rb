@@ -49,14 +49,15 @@ RSpec.describe InstagramConnect::Ingest::Registry do
     end
 
     it "falls back to Unknown so the registry always resolves" do
-      expect(described_class.handler_for("story_insights")).to eq(InstagramConnect::Ingest::Handlers::Unknown)
+      expect(described_class.handler_for("response_feedback"))
+        .to eq(InstagramConnect::Ingest::Handlers::Unknown)
     end
   end
 
   describe ".handled?" do
     it "distinguishes a field with a handler from one that only banks" do
       expect(described_class.handled?("comments")).to be(true)
-      expect(described_class.handled?("mentions")).to be(false)
+      expect(described_class.handled?("response_feedback")).to be(false)
     end
   end
 
@@ -65,7 +66,7 @@ RSpec.describe InstagramConnect::Ingest::Registry do
     # bank and replay later, whereas an unsubscribed field is lost for good.
     it "covers every field the gem knows about, not only the handled ones" do
       expect(described_class.subscribable_fields).to include(*described_class.handled_fields)
-      expect(described_class.subscribable_fields).to include("mentions", "story_insights")
+      expect(described_class.subscribable_fields).to include("standby", "messaging_policy_enforcement")
     end
 
     it "lists no field twice" do

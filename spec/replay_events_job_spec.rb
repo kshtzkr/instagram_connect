@@ -45,7 +45,7 @@ RSpec.describe InstagramConnect::ReplayEventsJob do
   end
 
   it "leaves an event alone when nothing can parse its field yet" do
-    event = bank(field: "story_insights", dedupe_key: "s1", payload: { "media_id" => "x" })
+    event = bank(field: "response_feedback", dedupe_key: "s1", payload: { "feedback" => "x" })
 
     described_class.perform_now
 

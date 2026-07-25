@@ -40,6 +40,9 @@ module InstagramConnect
     instagram_connect_webhook_events
     instagram_connect_message_reactions
     instagram_connect_message_attachments
+    instagram_connect_media
+    instagram_connect_mentions
+    instagram_connect_insight_snapshots
   ].freeze
 
   class << self

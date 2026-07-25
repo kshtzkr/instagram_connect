@@ -131,6 +131,9 @@ RSpec.configure do |config|
     InstagramConnect::WebhookEvent.delete_all
     InstagramConnect::MessageReaction.delete_all
     InstagramConnect::MessageAttachment.delete_all
+    InstagramConnect::Mention.delete_all
+    InstagramConnect::InsightSnapshot.delete_all
+    InstagramConnect::MediaItem.delete_all
     InstagramConnect::Message.delete_all
     InstagramConnect::Conversation.delete_all
     InstagramConnect::Comment.delete_all
