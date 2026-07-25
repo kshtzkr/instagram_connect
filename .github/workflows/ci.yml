@@ -39,3 +39,39 @@ jobs:
 
       - name: Run tests
         run: bundle exec rspec --format progress
+
+  # The gem ships its own migrations into whatever database the host runs, and
+  # most hosts run Postgres. The SQLite job above is the fast default so a
+  # contributor needs no services; this one is what stops adapter-specific DDL
+  # in db/migrate from reaching an adopter's deploy unnoticed.
+  test-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Run tests against Postgres
+        env:
+          PGPASSWORD: postgres
+          INSTAGRAM_CONNECT_TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/instagram_connect_test
+        run: |
+          createdb -h localhost -U postgres instagram_connect_test
+          bundle exec rspec --format progress
