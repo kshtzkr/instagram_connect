@@ -9,6 +9,11 @@ module InstagramConnect
         "messages" => Handlers::Messages,
         "message_echoes" => Handlers::Messages,
         "messaging_postbacks" => Handlers::MessagingPostbacks,
+        "message_reactions" => Handlers::MessageReactions,
+        "messaging_seen" => Handlers::MessagingSeen,
+        "messaging_referral" => Handlers::MessagingReferral,
+        "messaging_optins" => Handlers::MessagingOptins,
+        "messaging_handover" => Handlers::MessagingHandover,
         "comments" => Handlers::Comments,
         "live_comments" => Handlers::Comments
       }.freeze
