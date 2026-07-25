@@ -82,6 +82,23 @@ RSpec.describe InstagramConnect::Message do
       expect(late).to be_present
     end
 
+    # Denormalized so account-scoped queries and stream names need no join, and
+    # so uniqueness can be scoped per account.
+    it "inherits the account from its conversation" do
+      expect(build.account_id).to eq(account.id)
+    end
+
+    it "keeps an account_id that was set explicitly" do
+      expect(build(account_id: 99).account_id).to eq(99)
+    end
+
+    it "validates without a conversation rather than raising on the lookup" do
+      message = InstagramConnect::Message.new(direction: "inbound", status: "received", kind: "dm")
+
+      expect { message.valid? }.not_to raise_error
+      expect(message.account_id).to be_nil
+    end
+
     # The gem never depends on Turbo; a host that renders live overrides this.
     it "offers a no-op broadcast seam for callback-free writes" do
       expect(build.broadcast_refresh).to be_nil

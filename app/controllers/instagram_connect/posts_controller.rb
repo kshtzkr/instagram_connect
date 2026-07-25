@@ -34,7 +34,7 @@ module InstagramConnect
     end
 
     def client_for(account)
-      Client.new(access_token: account.access_token, ig_user_id: account.ig_user_id)
+      account.client
     end
   end
 end
