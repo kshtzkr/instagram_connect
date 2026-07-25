@@ -1,6 +1,7 @@
 require "logger"
 require_relative "instagram_connect/version"
 require_relative "instagram_connect/errors"
+require_relative "instagram_connect/usage"
 require_relative "instagram_connect/result"
 require_relative "instagram_connect/configuration"
 require_relative "instagram_connect/auth/strategy"
@@ -15,6 +16,7 @@ require_relative "instagram_connect/media/attaching"
 require_relative "instagram_connect/text_splitter"
 require_relative "instagram_connect/messaging_window"
 require_relative "instagram_connect/ingest"
+require_relative "instagram_connect/rate_limiter"
 require_relative "instagram_connect/doctor"
 
 # InstagramConnect connects a Rails app to Instagram over the official Meta
@@ -43,6 +45,7 @@ module InstagramConnect
     instagram_connect_media
     instagram_connect_mentions
     instagram_connect_insight_snapshots
+    instagram_connect_api_budgets
   ].freeze
 
   class << self

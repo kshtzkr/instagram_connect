@@ -134,6 +134,7 @@ RSpec.configure do |config|
     InstagramConnect::Mention.delete_all
     InstagramConnect::InsightSnapshot.delete_all
     InstagramConnect::MediaItem.delete_all
+    InstagramConnect::ApiBudget.delete_all
     InstagramConnect::Message.delete_all
     InstagramConnect::Conversation.delete_all
     InstagramConnect::Comment.delete_all
