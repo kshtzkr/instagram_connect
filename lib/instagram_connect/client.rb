@@ -33,6 +33,61 @@ module InstagramConnect
       })
     end
 
+    # Typing indicators and read receipts. Meta is explicit that a sender action
+    # request must carry ONLY the recipient and the action — bundling it with a
+    # message silently drops one of the two.
+    def send_sender_action(recipient_id:, action:)
+      post("/me/messages", { recipient: { id: recipient_id }, sender_action: action })
+    end
+
+    def send_quick_replies(recipient_id:, text:, replies:, tag: nil)
+      quick_replies = Array(replies).map do |reply|
+        { content_type: "text", title: reply[:title].to_s[0, 20], payload: reply[:payload].to_s }
+      end
+      send_message(recipient: { id: recipient_id },
+                   message: { text: text, quick_replies: quick_replies }, tag: tag)
+    end
+
+    def send_attachment(recipient_id:, attachment_id:, tag: nil)
+      send_message(recipient: { id: recipient_id },
+                   message: { attachment: { payload: { attachment_id: attachment_id } } }, tag: tag)
+    end
+
+    # Uploads bytes to Meta and returns a reusable attachment id.
+    #
+    # Preferred over handing Meta a signed URL to the host's storage: a signed
+    # URL is a bearer capability for a customer's file, sitting on the public
+    # internet for as long as its TTL, fetched from an address we do not
+    # control. This moves the bytes over an authenticated POST instead, and the
+    # returned id can be reused rather than re-uploading the same file.
+    # +file+ must be a File or Tempfile — HTTParty builds the multipart body
+    # from objects that expose a path, which is also what ActiveStorage's
+    # blob.open yields.
+    def upload_attachment(file:, type: "image")
+      body = {
+        platform: "instagram",
+        message: { attachment: { type: type, payload: { is_reusable: true } } }.to_json,
+        filedata: file
+      }
+      post_multipart("/me/message_attachments", body)
+    end
+
+    # Ice breakers and the persistent menu both live on the messenger profile.
+    def set_messenger_profile(**fields)
+      post("/me/messenger_profile", fields.merge(platform: "instagram"))
+    end
+
+    def messenger_profile(fields:)
+      get("/me/messenger_profile", { fields: Array(fields).join(","), platform: "instagram" })
+    end
+
+    def delete_messenger_profile(fields:)
+      parse(HTTParty.delete(url("/me/messenger_profile"),
+                            headers: bearer.merge("Content-Type" => "application/json"),
+                            body: { fields: Array(fields), platform: "instagram" }.to_json,
+                            timeout: TIMEOUT))
+    end
+
     # One-time private reply to a comment (comment -> DM), valid 7 days.
     def private_reply(comment_id:, text:)
       post("/me/messages", { recipient: { comment_id: comment_id }, message: { text: text } })
@@ -133,6 +188,13 @@ module InstagramConnect
 
     def delete(path)
       parse(HTTParty.delete(url(path), headers: bearer, timeout: TIMEOUT))
+    end
+
+    # multipart/form-data rather than JSON. The Attachment Upload API takes raw
+    # bytes, which a JSON body cannot carry.
+    def post_multipart(path, body)
+      parse(HTTParty.post(url(path), headers: bearer, body: body,
+                          multipart: true, timeout: TIMEOUT))
     end
 
     def url(path)
