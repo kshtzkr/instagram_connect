@@ -25,6 +25,18 @@ RSpec.describe InstagramConnect::Configuration do
     it "provides a default current_user_id_resolver that is safe off a plain object" do
       expect(config.current_user_id_resolver.call).to be_nil
     end
+
+    it "reads the signed-in user's id when the controller exposes current_user" do
+      controller = Struct.new(:current_user).new(Struct.new(:id).new(7))
+
+      expect(controller.instance_exec(&config.current_user_id_resolver)).to eq(7)
+    end
+
+    it "returns nil when the controller exposes current_user but nobody is signed in" do
+      controller = Struct.new(:current_user).new(nil)
+
+      expect(controller.instance_exec(&config.current_user_id_resolver)).to be_nil
+    end
   end
 
   describe "#auth_path=" do
