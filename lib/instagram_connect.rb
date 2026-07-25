@@ -34,6 +34,7 @@ module InstagramConnect
     instagram_connect_messages
     instagram_connect_inbound_messages
     instagram_connect_comments
+    instagram_connect_webhook_events
   ].freeze
 
   class << self

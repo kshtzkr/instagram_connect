@@ -64,13 +64,20 @@ RSpec.describe InstagramConnect::Ingest do
       payload = dm_payload(mid: "dup", sender: "CUST", recipient: "IGACC")
       run(payload)
       summary = run(payload)
+      expect(summary[:duplicates]).to eq(1)
       expect(summary[:skipped]).to eq(1)
       expect(InstagramConnect::Message.count).to eq(1)
     end
 
-    it "skips a message with a blank id" do
+    it "banks a message with a blank id instead of storing it" do
+      # Without Meta's mid the message cannot be deduped against its own echo,
+      # so it is recorded for inspection rather than written to the thread.
       summary = run(dm_payload(mid: "", sender: "CUST", recipient: "IGACC"))
-      expect(summary).to include(messages: 0, skipped: 1)
+
+      expect(summary[:messages]).to eq(0)
+      expect(summary[:unhandled]).to eq(1)
+      expect(InstagramConnect::Message.count).to eq(0)
+      expect(InstagramConnect::WebhookEvent.last.status).to eq("unhandled")
     end
   end
 
@@ -82,9 +89,18 @@ RSpec.describe InstagramConnect::Ingest do
       expect(seen_comments.size).to eq(1)
     end
 
-    it "skips non-comment change fields" do
+    it "banks a change field it cannot parse yet" do
       summary = run(comment_payload(field: "mentions"))
-      expect(summary).to include(comments: 0, skipped: 1)
+
+      expect(summary[:comments]).to eq(0)
+      expect(summary[:unhandled]).to eq(1)
+
+      banked = InstagramConnect::WebhookEvent.last
+      expect(banked.field).to eq("mentions")
+      expect(banked.status).to eq("unhandled")
+      # Meta never re-delivers a mention, so the payload has to survive verbatim
+      # for ReplayEventsJob to reconstruct it once a handler exists.
+      expect(banked.payload).to eq(comment_payload(field: "mentions")["entry"].first["changes"].first)
     end
   end
 
@@ -98,9 +114,11 @@ RSpec.describe InstagramConnect::Ingest do
       expect(seen_postbacks.first).to include(payload: "GO", title: "Start")
     end
 
-    it "skips a messaging event that is neither a message nor a postback" do
+    it "banks a messaging event it cannot parse yet, inferring the field from its shape" do
       payload = { "entry" => [ { "id" => "IGACC", "messaging" => [ { "sender" => { "id" => "CUST" }, "read" => {} } ] } ] }
-      expect(run(payload)).to include(skipped: 1)
+
+      expect(run(payload)[:unhandled]).to eq(1)
+      expect(InstagramConnect::WebhookEvent.last.field).to eq("messaging_seen")
     end
   end
 
@@ -111,10 +129,18 @@ RSpec.describe InstagramConnect::Ingest do
       expect(summary[:messages]).to eq(1)
     end
 
-    it "skips an entry for an unknown account" do
+    it "banks an entry for an unknown account rather than dropping it" do
+      # This is how an operator discovers a second Page was connected to the
+      # app, instead of losing its traffic to a counter.
       summary = run(dm_payload(mid: "x", sender: "CUST", recipient: "NOPE", entry_id: "NOPE"))
-      expect(summary).to include(messages: 0, skipped: 1)
+
+      expect(summary[:messages]).to eq(0)
+      expect(summary[:unhandled]).to eq(1)
       expect(InstagramConnect::Message.count).to eq(0)
+
+      banked = InstagramConnect::WebhookEvent.last
+      expect(banked.account_id).to be_nil
+      expect(banked.entry_id).to eq("NOPE")
     end
   end
 
@@ -129,6 +155,15 @@ RSpec.describe InstagramConnect::Ingest do
   end
 
   it "tolerates an empty payload" do
-    expect(run({})).to eq(messages: 0, comments: 0, postbacks: 0, skipped: 0)
+    expect(run({}).to_h).to include(messages: 0, comments: 0, postbacks: 0, skipped: 0)
+  end
+
+  it "reports skipped as duplicates plus unhandled, the figure 0.2.x hosts read" do
+    summary = InstagramConnect::Ingest::Summary.new
+    summary.duplicates = 2
+    summary.unhandled = 3
+
+    expect(summary[:skipped]).to eq(5)
+    expect(summary.to_h).to include(skipped: 5, duplicates: 2, unhandled: 3)
   end
 end
