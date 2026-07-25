@@ -19,6 +19,10 @@ SimpleCov.start do
   add_filter "/lib/instagram_connect/engine.rb"    # boot-time wiring; exercised by the dummy app
                                                    #   booting at all, which every spec depends on
   add_filter "/lib/instagram_connect/railtie.rb"   # the non-engine branch; unreachable under Rails
+  add_filter "/db/migrate/"                        # DDL, executed by the suite booting. Their only
+                                                   #   branches pick a type per adapter, so each run
+                                                   #   covers one side by definition — the SQLite and
+                                                   #   Postgres CI jobs together are the real check
 
   minimum_coverage line: 100, branch: 100
   minimum_coverage_by_file line: 100, branch: 100

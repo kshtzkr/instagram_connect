@@ -10,6 +10,7 @@ RSpec.describe "coverage filters" do
     lib/generators
     lib/instagram_connect/engine.rb
     lib/instagram_connect/railtie.rb
+    db/migrate
   ].freeze
 
   it "excludes only paths that still exist" do

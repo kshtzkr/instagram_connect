@@ -98,6 +98,7 @@ RSpec.configure do |config|
 
     # Child-first so a foreign key (if an adopter's database enforces one)
     # never blocks the delete.
+    InstagramConnect::WebhookEvent.delete_all
     InstagramConnect::Message.delete_all
     InstagramConnect::Conversation.delete_all
     InstagramConnect::Comment.delete_all
