@@ -22,6 +22,16 @@ module InstagramConnect
             from_username: value.dig("from", "username"),
             parent_id: value["parent_id"]
           )
+          comment.update!(
+            from_ig_id: value.dig("from", "id"),
+            commented_at: commented_at,
+            # A private reply to a live comment is only valid while the
+            # broadcast is running, so which field delivered this decides
+            # whether that action can be offered at all.
+            is_live: envelope.field == "live_comments"
+          )
+
+          record_media(comment)
           notify(config.on_comment, comment)
           comment
         end
@@ -30,6 +40,18 @@ module InstagramConnect
 
         def value
           event["value"] || {}
+        end
+
+        def commented_at
+          envelope.occurred_at || Time.current
+        end
+
+        # The comment names a media we may never have seen — it could predate
+        # this install, or have been posted from a phone.
+        def record_media(comment)
+          return if comment.media_id.blank?
+
+          InstagramConnect::MediaItem.record(account: account, ig_media_id: comment.media_id)
         end
       end
     end

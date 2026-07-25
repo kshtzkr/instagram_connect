@@ -15,7 +15,9 @@ module InstagramConnect
         "messaging_optins" => Handlers::MessagingOptins,
         "messaging_handover" => Handlers::MessagingHandover,
         "comments" => Handlers::Comments,
-        "live_comments" => Handlers::Comments
+        "live_comments" => Handlers::Comments,
+        "mentions" => Handlers::Mentions,
+        "story_insights" => Handlers::StoryInsights
       }.freeze
 
       # Every field the gem knows Meta can send on the `instagram` object.
