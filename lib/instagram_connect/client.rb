@@ -150,6 +150,38 @@ module InstagramConnect
       get("/me/accounts", { fields: "id,name,access_token,instagram_business_account" })
     end
 
+    # Walks a Graph collection to the end, following Meta's own cursors.
+    #
+    # Offsets are not safe here: a collection can shift between calls, so an
+    # offset silently skips or repeats rows. +limit_pages+ exists because these
+    # collections can be unbounded and every page spends rate budget.
+    def each_page(path, query = {}, limit_pages: 25)
+      cursor = nil
+      pages = 0
+
+      while pages < limit_pages
+        page_query = cursor ? query.merge(after: cursor) : query
+        result = get(path, page_query)
+        return result unless result.success?
+
+        yield result
+        pages += 1
+        cursor = result.next_cursor
+        break if cursor.nil?
+      end
+
+      Result.ok(data: { "pages" => pages })
+    end
+
+    # Every record across every page, for callers that just want the list.
+    def collect(path, query = {}, limit_pages: 25)
+      records = []
+      result = each_page(path, query, limit_pages: limit_pages) { |page| records.concat(page.records) }
+      return result if result.failure?
+
+      Result.ok(data: { "data" => records })
+    end
+
     def fetch_media_binary(url:)
       response = HTTParty.get(url, headers: bearer, timeout: TIMEOUT, follow_redirects: true)
       unless response.success?
@@ -208,14 +240,19 @@ module InstagramConnect
     def parse(response)
       data = response.parsed_response
       data = {} unless data.is_a?(Hash)
+      usage = Usage.from_headers(response.headers)
       if response.success?
-        Result.ok(id: data["message_id"] || data["id"], data: data)
+        Result.ok(id: data["message_id"] || data["id"], data: data, usage: usage)
       else
         err = data["error"].is_a?(Hash) ? data["error"] : {}
         Result.error(err["message"] || "HTTP #{response.code}",
                      error_code: err["code"],
-                     retry_after: err.dig("error_data", "retry_after"),
-                     data: data)
+                     # Meta names the wait in the error when it has one; when it
+                     # does not, the usage header's estimate is the next best
+                     # thing and is better than an invented backoff.
+                     retry_after: err.dig("error_data", "retry_after") || usage&.retry_after,
+                     data: data,
+                     usage: usage)
       end
     end
   end
