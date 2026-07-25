@@ -140,6 +140,13 @@ module InstagramConnect
       get("/#{media_id}/insights", { metric: Array(metrics).join(",") })
     end
 
+    # The connected account's own profile. A different call from #profile,
+    # which looks up the person on the other end of a thread.
+    def account_profile(ig_user_id: @ig_user_id, fields: %w[username name profile_picture_url
+                                                            followers_count media_count])
+      get("/#{require_ig_user_id(ig_user_id)}", { fields: Array(fields).join(",") })
+    end
+
     def profile(igsid:, fields: %w[name username profile_pic])
       get("/#{igsid}", { fields: Array(fields).join(",") })
     end

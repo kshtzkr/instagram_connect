@@ -6,6 +6,73 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-26
+
+Conversations and engagement. The gem parsed 2 of the 15 webhook fields Meta can
+send on the `instagram` object; it now parses 12 and durably banks the rest.
+
+### Added
+- **Webhook event ledger.** Every event is written to
+  `instagram_connect_webhook_events` verbatim before anything parses it. Meta
+  neither stores webhook notifications nor re-delivers them, so a parse bug used
+  to be permanent data loss and is now a re-runnable row. `ReplayEventsJob`
+  re-runs banked events once a handler exists, which also means a field can be
+  subscribed at Meta before the gem can parse it.
+- **Handlers** for `message_reactions`, `messaging_seen`, `messaging_referral`,
+  `messaging_optins`, `messaging_handover`, `mentions` and `story_insights`,
+  alongside the existing messages, echoes, postbacks and comments.
+- **Inbound media.** Attachments get a row each and one fetch job apiece; bytes
+  are copied into the host's storage with a magic-byte MIME sniff that overrides
+  the declared Content-Type. Requires Active Storage in the host, and no-ops
+  without it.
+- **Outbound media** via Meta's Attachment Upload API, which moves bytes over an
+  authenticated POST rather than exposing a signed URL to a customer's file.
+- `TextSplitter`, which splits replies over Meta's 1000-**byte** message ceiling
+  rather than letting the send be rejected whole.
+- Sender actions, quick replies, generic templates, private replies, ice
+  breakers and the persistent menu on the client.
+- **Per-account tokens.** `page_access_token` is now its own encrypted column;
+  `Account#client` is the only place a client is built and pins the config to
+  the account's own auth path.
+- `AccountReadinessJob`, moved in from host applications. It swaps the OAuth
+  user token for the Page token and subscribes the Page to the webhook fields
+  the ingest registry can actually parse.
+- **Cursor pagination** (`Client#collect`, `#each_page`) and **rate budgets**
+  (`RateLimiter`, `instagram_connect_api_budgets`), driven by Meta's own
+  `X-Business-Use-Case-Usage` header rather than by local arithmetic.
+- `ProfileSyncJob`, filling the `username` and `display_name` columns that had
+  existed since 0.1 with nothing ever writing them.
+- `MediaItem`, `Mention`, `InsightSnapshot`, `MessageAttachment`,
+  `MessageReaction`, `WebhookEvent` and `ApiBudget` models, with migrations.
+
+### Changed
+- Messages carry `sent_at`, Meta's own clock. Thread ordering used our
+  `created_at`, so a webhook batch delayed by a redeploy silently reordered a
+  conversation. Every `Conversation` writer is now monotonic.
+- Uniqueness is scoped per account. A global unique index on `ig_message_id`
+  dropped messages outright when two connected accounts messaged each other.
+- An attachment arriving with no URL no longer marks the message media
+  `pending`. Instagram CDN links expire and cannot be re-requested, so that left
+  a loading placeholder that would never resolve.
+- `Ingest.call` returns a `Summary` rather than a plain Hash. It reads as the
+  old hash — `skipped` still reports duplicates plus unhandled — and adds
+  `duplicates`, `unhandled`, `failed` and `callback_errors`.
+- Host callbacks fire outside the handler in their own rescue. The rows are
+  committed by then, so a raising hook no longer marks the event failed and
+  cause it to be replayed and duplicated.
+
+### Deprecated
+- `InboundMessage`. `WebhookEvent` is the dedupe claim now: keying every event
+  type on one message id is wrong once `messaging_seen` carries the mid of a
+  message already claimed. Kept in step for 0.2.x hosts; removal at 1.0.
+
+### Fixed
+- Every `Client` was built from the globally configured auth path, so a host
+  with accounts on both paths talked to the wrong Graph host — silently.
+- `refresh_access_token!` refreshed via the global strategy rather than the
+  account's own.
+
+
 ### Documentation
 - Rewrote the README with a badge row, table of contents, a quick start, and a
   usage section per feature (webhooks and signature verification, the messaging

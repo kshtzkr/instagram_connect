@@ -111,7 +111,16 @@ module InstagramConnect
         end
 
         def conversation
-          @conversation ||= InstagramConnect::Conversation.locate(account: account, igsid: igsid)
+          @conversation ||= InstagramConnect::Conversation.locate(account: account, igsid: igsid).tap do |thread|
+            # Meta sends the profile on a separate call from the message, so a
+            # thread starts life knowing only an opaque id. Fetch it once, when
+            # the thread first appears, rather than on every message.
+            enqueue_profile_sync(thread) if thread.profile_synced_at.nil?
+          end
+        end
+
+        def enqueue_profile_sync(thread)
+          InstagramConnect::ProfileSyncJob.perform_later(conversation_id: thread.id)
         end
 
         # The webhook ledger is the dedupe claim now. InboundMessage is kept in
