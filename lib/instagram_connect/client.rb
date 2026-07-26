@@ -157,6 +157,20 @@ module InstagramConnect
       get("/me/accounts", { fields: "id,name,access_token,instagram_business_account" })
     end
 
+    # Threads that already exist on the account. Webhooks only ever tell us about
+    # NEW activity, so without this an inbox starts empty and stays empty until
+    # somebody happens to message in. Meta returns the 20 most recent messages
+    # per thread and no more — that is the whole history available to any app.
+    def list_conversations(ig_user_id: @ig_user_id, limit: 50)
+      collect("/#{require_ig_user_id(ig_user_id)}/conversations",
+              { platform: "instagram", fields: "id,updated_time", limit: limit })
+    end
+
+    def conversation_messages(conversation_id:, limit: 20)
+      get("/#{conversation_id}",
+          { fields: "messages.limit(#{limit}){id,created_time,from,to,message}" })
+    end
+
     # One Page by id. /me/accounts answers for the Pages a token may *enumerate*;
     # this answers for a Page it may *read*. Those are not the same set — a Page
     # granted through the Login-for-Business asset picker is readable here while

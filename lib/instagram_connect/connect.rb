@@ -25,6 +25,10 @@ module InstagramConnect
       )
       account.connected_by_id = connected_by_id unless connected_by_id.nil?
       account.save!
+      # Webhooks only announce new activity, so without this the operator
+      # connects and stares at an empty inbox beside an Instagram account full
+      # of conversations.
+      SyncConversationsJob.perform_later(account.id)
       account
     end
 

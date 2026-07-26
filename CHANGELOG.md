@@ -6,6 +6,25 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-07-26
+
+### Added
+
+- **Existing conversations are now imported.** The gem only ever created threads from inbound
+  webhooks, and webhooks only announce NEW activity — so a freshly connected account showed an
+  empty inbox beside an Instagram account full of conversations, and stayed empty until somebody
+  happened to message in. `SyncConversationsJob` pulls every thread and the 20 most recent messages
+  in each, which is the whole history Meta exposes to any app. It runs on connect and is safe to
+  re-run: threads are located by igsid and messages dedupe on `ig_message_id`.
+- `Client#list_conversations` and `Client#conversation_messages`.
+
+### Note
+
+The Conversations API is a **Page-token** operation. An account still holding the OAuth user token
+gets `(#3) Application does not have the capability to make this API call` — verified against a live
+account. `AccountReadinessJob` performs that swap, so it must have run before a sync can succeed.
+
+
 ## [0.3.1] - 2026-07-26
 
 ### Fixed
