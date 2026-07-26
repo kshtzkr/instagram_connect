@@ -166,13 +166,20 @@ module InstagramConnect
     # Facebook-Login path that is the PAGE, not the Instagram user — verified
     # in production, where the Instagram user id answered with a capability
     # error while holding a perfectly good Page token.
-    # limit defaults low deliberately. Meta rejected 50 outright on a live
-    # account with "Please reduce the amount of data you're asking for" — the
-    # conversations edge is expensive per row, and the cursor walk means a
-    # smaller page costs nothing but an extra round trip.
-    def list_conversations(node_id: @ig_user_id, limit: 20)
-      collect("/#{require_ig_user_id(node_id)}/conversations",
-              { platform: "instagram", fields: "id,updated_time", limit: limit })
+    # limit defaults LOW deliberately, and shrinks further on refusal. Meta
+    # rejected 50 outright on a live account with "Please reduce the amount of
+    # data you're asking for" — then rejected 20 as well on a Page with a deep
+    # Messenger history. The edge is priced per row, the cursor walk means a
+    # small page costs nothing but round trips, and updated_time is gone
+    # because nothing ever read it.
+    def list_conversations(node_id: @ig_user_id, limit: 10)
+      path = "/#{require_ig_user_id(node_id)}/conversations"
+      result = collect(path, { platform: "instagram", fields: "id", limit: limit })
+      return result if result.success? || !reduce_data_error?(result)
+
+      # One retry at the smallest useful page. If Meta refuses even this, the
+      # caller's error handling reports Meta's own words as usual.
+      collect(path, { platform: "instagram", fields: "id", limit: 2 })
     end
 
     def conversation_messages(conversation_id:, limit: 20)
@@ -277,6 +284,13 @@ module InstagramConnect
     def post_multipart(path, body)
       parse(HTTParty.post(url(path), headers: bearer, body: body,
                           multipart: true, timeout: TIMEOUT))
+    end
+
+    # Meta's "please reduce the amount of data" comes back as error code 1
+    # (GraphMethodException varies), so match the message — it is the one
+    # documented, stable part of the refusal.
+    def reduce_data_error?(result)
+      result.error_message.to_s.include?("reduce the amount of data")
     end
 
     def url(path)
