@@ -6,6 +6,27 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-07-26
+
+### Fixed
+
+- **Connecting an account failed when the Page came from the Login-for-Business asset picker.**
+  `/me/accounts` lists only the Pages a token may *enumerate*. A Page granted through the picker is
+  absent from that listing while reading perfectly well by id, so the list came back empty and the
+  connect was refused — on an account that was correctly linked and fully granted. Identity
+  resolution now falls back to the assets the token actually carries (`/debug_token` granular
+  scopes, which needs no permission beyond the app's own credentials) and reads those Pages by id.
+- **A failed Graph call was reported as a missing account.** `resolve_identity` never checked
+  `Result#success?`, so an expired token or an HTTP 400 produced the same message as an empty list.
+  API failures now raise `ApiError` carrying Meta's own message.
+- **The error message asserted a cause it had not verified.** It claimed no Instagram account was
+  linked to a Page, which was false in exactly the case that triggered it. It now states what was
+  actually checked.
+- **`AccountReadinessJob` had the same flaw**, hunting for a known Page inside `/me/accounts`
+  instead of reading it by id — so the Page-token swap and the webhook subscription failed for the
+  same accounts, silently.
+
+
 ## [0.3.0] - 2026-07-26
 
 Conversations and engagement. The gem parsed 2 of the 15 webhook fields Meta can

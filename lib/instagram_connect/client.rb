@@ -157,6 +157,26 @@ module InstagramConnect
       get("/me/accounts", { fields: "id,name,access_token,instagram_business_account" })
     end
 
+    # One Page by id. /me/accounts answers for the Pages a token may *enumerate*;
+    # this answers for a Page it may *read*. Those are not the same set — a Page
+    # granted through the Login-for-Business asset picker is readable here while
+    # absent from the listing.
+    def page(page_id)
+      get("/#{page_id}", { fields: "id,name,access_token,instagram_business_account" })
+    end
+
+    # The asset ids this token actually carries, from Meta's own record of the
+    # consent. Needs no permission beyond the app's own credentials.
+    def granted_asset_ids
+      result = get("/debug_token", { input_token: access_token,
+                                     access_token: "#{config.app_id}|#{config.app_secret}" })
+      return [] unless result.success?
+
+      Array(result.data.dig("data", "granular_scopes"))
+        .flat_map { |scope| Array(scope["target_ids"]) }
+        .uniq
+    end
+
     # Walks a Graph collection to the end, following Meta's own cursors.
     #
     # Offsets are not safe here: a collection can shift between calls, so an

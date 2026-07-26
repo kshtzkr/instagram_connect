@@ -35,11 +35,34 @@ module InstagramConnect
     def resolve_identity(data)
       return { ig_user_id: data[:ig_user_id], page_id: data[:page_id] } if data[:ig_user_id]
 
-      result = Client.new(access_token: data[:access_token], config: @config).list_pages
-      page = Array(result.data["data"]).find { |p| p["instagram_business_account"] }
-      raise ConfigurationError, "no Instagram business account is linked to a Page" unless page
+      client = Client.new(access_token: data[:access_token], config: @config)
+      page = candidate_pages(client).find { |p| p["instagram_business_account"] }
+      unless page
+        raise ConfigurationError,
+          "connected, but no Page with a linked Instagram business account was found — " \
+          "checked the Pages this token can list and the assets it was granted"
+      end
 
-      { ig_user_id: page.dig("instagram_business_account", "id"), page_id: page["id"] }
+      { ig_user_id: page.dig("instagram_business_account", "id").to_s, page_id: page["id"].to_s }
+    end
+
+    # /me/accounts lists only the Pages a token may enumerate, and a Page granted
+    # through the Login-for-Business asset picker is not one of them — the list
+    # comes back empty while the Page itself reads fine. So when the listing has
+    # nothing usable, ask the token which assets it carries and read those.
+    def candidate_pages(client)
+      listed = client.list_pages
+      unless listed.success?
+        raise ApiError, "could not read Pages from Instagram: #{listed.error_message}"
+      end
+
+      pages = Array(listed.data["data"])
+      return pages if pages.any? { |p| p["instagram_business_account"] }
+
+      client.granted_asset_ids.filter_map do |id|
+        result = client.page(id)
+        result.data if result.success?
+      end
     end
   end
 end

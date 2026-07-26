@@ -14,9 +14,11 @@ RSpec.describe InstagramConnect::AccountReadinessJob do
                  headers: { "Content-Type" => "application/json" })
   end
 
-  def stub_pages(pages)
-    stub_request(:get, "#{base}/me/accounts").with(query: hash_including({}))
-      .to_return(status: 200, body: { data: pages }.to_json,
+  # The job reads the Page it already knows the id of, rather than listing
+  # every Page — the listing omits Pages granted through the asset picker.
+  def stub_page(body)
+    stub_request(:get, "#{base}/PAGE1").with(query: hash_including({}))
+      .to_return(status: 200, body: body.to_json,
                  headers: { "Content-Type" => "application/json" })
   end
 
@@ -56,8 +58,7 @@ RSpec.describe InstagramConnect::AccountReadinessJob do
     it "swaps the user token for the Page token and clears the expiry" do
       account.update!(token_expires_at: 30.days.from_now)
       stub_me(id: "PERSON")
-      stub_pages([ { "id" => "OTHER", "access_token" => "nope" },
-                   { "id" => "PAGE1", "access_token" => "PAGE-TOKEN" } ])
+      stub_page({ "id" => "PAGE1", "access_token" => "PAGE-TOKEN" })
       stub_subscriptions(described_class.subscribed_fields)
 
       described_class.perform_now
@@ -80,12 +81,12 @@ RSpec.describe InstagramConnect::AccountReadinessJob do
       described_class.perform_now
 
       expect(account.reload.page_access_token).to eq("USER-TOKEN")
-      expect(WebMock).not_to have_requested(:get, "#{base}/me/accounts")
+      expect(WebMock).not_to have_requested(:get, "#{base}/PAGE1")
     end
 
     it "flags an account whose operator no longer administers the Page" do
       stub_me(id: "PERSON")
-      stub_pages([ { "id" => "OTHER", "access_token" => "x" } ])
+      stub_page({ "id" => "PAGE1" })
 
       described_class.perform_now
 
