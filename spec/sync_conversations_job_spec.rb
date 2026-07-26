@@ -124,6 +124,26 @@ RSpec.describe InstagramConnect::SyncConversationsJob do
       .with(a_string_including("capability denied"))
   end
 
+  # Meta prices the conversations edge per row and refuses pages it finds too
+  # heavy, with "Please reduce the amount of data you're asking for". A Page
+  # with deep Messenger history refused 20; the client retries once at the
+  # smallest useful page rather than giving up.
+  it "retries with a tiny page when Meta says reduce the data" do
+    stub_request(:get, "#{base}/PAGE1/conversations")
+      .with(query: hash_including("limit" => "10"))
+      .to_return(status: 400,
+                 body: { error: { message: "Please reduce the amount of data you're asking for, then retry your request" } }.to_json,
+                 headers: json)
+    stub_request(:get, "#{base}/PAGE1/conversations")
+      .with(query: hash_including("limit" => "2"))
+      .to_return(status: 200, body: { data: [ { id: "T1" } ] }.to_json, headers: json)
+    stub_messages("T1", [ inbound(id: "M1", text: "hi") ])
+
+    described_class.perform_now(account.id)
+
+    expect(InstagramConnect::Message.find_by(ig_message_id: "M1")).to be_present
+  end
+
   it "does nothing when the thread listing fails" do
     stub_request(:get, "#{base}/PAGE1/conversations").with(query: hash_including({}))
       .to_return(status: 400, body: { error: { message: "nope" } }.to_json, headers: json)

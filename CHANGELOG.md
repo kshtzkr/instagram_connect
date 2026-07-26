@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-07-26
+
+### Fixed
+
+- **Conversation sync refused on Pages with deep Messenger history.** Meta prices the conversations
+  edge per row and answered even a 20-thread page with "Please reduce the amount of data you're
+  asking for" — verified live. The listing now asks for 10 at a time, drops the `updated_time`
+  field nothing ever read, and on that specific refusal retries once at the smallest useful page
+  before reporting Meta's own words.
+
+
 ## [0.3.5] - 2026-07-26
 
 ### Fixed
