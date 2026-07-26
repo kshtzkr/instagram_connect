@@ -28,8 +28,17 @@ module InstagramConnect
 
     HTTP_TIMEOUT = 15
 
+    # What we ask Meta to deliver to the webhook endpoint.
     def self.subscribed_fields
       Ingest::Registry.subscribable_fields
+    end
+
+    # What `subscribed_apps` will actually accept — the Page object names, minus
+    # the fields that only exist on the `instagram` object. Sending an Instagram
+    # name here fails the ENTIRE call, so the two lists are deliberately
+    # separate rather than one list used twice.
+    def self.page_subscribed_fields
+      Ingest::Registry.page_subscribable_fields
     end
 
     # Cheap negative check so an install with no connected account never
@@ -105,7 +114,7 @@ module InstagramConnect
     def ensure_subscription(account)
       return if account.page_access_token.blank?
 
-      wanted = self.class.subscribed_fields
+      wanted = self.class.page_subscribed_fields
       current = graph_get(account, "/#{account.page_id}/subscribed_apps", fields: "subscribed_fields")
       subscribed = Array(current["data"]).flat_map { |app| Array(app["subscribed_fields"]) }.map(&:to_s)
 

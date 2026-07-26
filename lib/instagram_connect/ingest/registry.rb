@@ -43,6 +43,33 @@ module InstagramConnect
         story_insights
       ].freeze
 
+      # Meta's Page object and Instagram object use DIFFERENT names for the same
+      # webhook. `POST /{page-id}/subscribed_apps` takes the PAGE vocabulary and
+      # rejects the whole call — every field, not just the offender — on the
+      # first name it does not recognise:
+      #
+      #   (#100) Param subscribed_fields[4] must be one of {...} - got "messaging_seen"
+      #
+      # That one rejection is why a correctly configured Page received nothing at
+      # all. Fields with no Page equivalent (comments, mentions, story_insights)
+      # are subscribed on the `instagram` object in the app dashboard instead,
+      # and must not be sent here.
+      PAGE_FIELD_NAMES = {
+        "messaging_seen" => "message_reads",
+        "messaging_referral" => "messaging_referrals",
+        "messaging_handover" => "messaging_handovers"
+      }.freeze
+
+      INSTAGRAM_ONLY_FIELDS = %w[comments live_comments mentions story_insights].freeze
+
+      # The subset of KNOWN_FIELDS that `subscribed_apps` accepts, translated to
+      # the names Meta uses on a Page.
+      def self.page_subscribable_fields
+        (KNOWN_FIELDS - INSTAGRAM_ONLY_FIELDS)
+          .map { |field| PAGE_FIELD_NAMES.fetch(field, field) }
+          .uniq
+      end
+
       # Shape tests in priority order. `is_echo` must be checked before the
       # plain `message` case, since an echo carries a message too.
       MESSAGING_SHAPES = [

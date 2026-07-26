@@ -52,6 +52,36 @@ RSpec.describe InstagramConnect::AccountReadinessJob do
     end
   end
 
+  # Meta's Page object and Instagram object name the same webhooks differently,
+  # and subscribed_apps rejects the WHOLE call on the first name it does not
+  # know. Production died on exactly this: got "messaging_seen".
+  describe "subscribed_apps field vocabulary" do
+    it "sends Page names, never Instagram ones" do
+      fields = described_class.page_subscribed_fields
+
+      expect(fields).to include("message_reads", "messaging_referrals", "messaging_handovers")
+      expect(fields).not_to include("messaging_seen", "messaging_referral", "messaging_handover")
+    end
+
+    it "omits fields that exist only on the instagram object" do
+      fields = described_class.page_subscribed_fields
+
+      expect(fields).not_to include("comments", "live_comments", "mentions", "story_insights")
+    end
+
+    # Those four are still subscribed — in the app dashboard, on the instagram
+    # object — so they must stay in the ingest-side list.
+    it "keeps them in the list the ingest side declares" do
+      expect(described_class.subscribed_fields)
+        .to include("comments", "mentions", "story_insights")
+    end
+
+    it "still carries the messaging fields the ingest side handles" do
+      expect(described_class.page_subscribed_fields)
+        .to include("messages", "message_echoes", "message_reactions", "messaging_postbacks")
+    end
+  end
+
   describe "token grade" do
     # The messaging endpoints and the subscription below are Page-token
     # operations; the OAuth exchange only ever hands back a user token.
@@ -59,7 +89,7 @@ RSpec.describe InstagramConnect::AccountReadinessJob do
       account.update!(token_expires_at: 30.days.from_now)
       stub_me(id: "PERSON")
       stub_page({ "id" => "PAGE1", "access_token" => "PAGE-TOKEN" })
-      stub_subscriptions(described_class.subscribed_fields)
+      stub_subscriptions(described_class.page_subscribed_fields)
 
       described_class.perform_now
 
@@ -76,7 +106,7 @@ RSpec.describe InstagramConnect::AccountReadinessJob do
     # than attempt a recovery that cannot work.
     it "adopts a token that is already a Page token" do
       stub_me(id: "PAGE1")
-      stub_subscriptions(described_class.subscribed_fields)
+      stub_subscriptions(described_class.page_subscribed_fields)
 
       described_class.perform_now
 
@@ -97,7 +127,7 @@ RSpec.describe InstagramConnect::AccountReadinessJob do
 
     it "does not re-probe an account already verified" do
       account.update!(page_access_token: "PAGE-TOKEN", page_token_verified_at: 1.hour.ago)
-      stub_subscriptions(described_class.subscribed_fields)
+      stub_subscriptions(described_class.page_subscribed_fields)
 
       described_class.perform_now
 
@@ -119,12 +149,12 @@ RSpec.describe InstagramConnect::AccountReadinessJob do
       described_class.perform_now
 
       expect(WebMock).to have_requested(:post, "#{base}/PAGE1/subscribed_apps")
-      expect(account.reload.subscribed_field_list).to eq(described_class.subscribed_fields)
+      expect(account.reload.subscribed_field_list).to eq(described_class.page_subscribed_fields)
       expect(account.subscriptions_synced_at).to be_present
     end
 
     it "does not re-subscribe a Page that already carries every field" do
-      stub_subscriptions(described_class.subscribed_fields)
+      stub_subscriptions(described_class.page_subscribed_fields)
 
       described_class.perform_now
 
@@ -164,7 +194,7 @@ RSpec.describe InstagramConnect::AccountReadinessJob do
   it "clears a stale error once the account comes back healthy" do
     account.update!(page_access_token: "PAGE-TOKEN", page_token_verified_at: 1.hour.ago,
                     readiness_error: "earlier failure")
-    stub_subscriptions(described_class.subscribed_fields)
+    stub_subscriptions(described_class.page_subscribed_fields)
 
     described_class.perform_now
 
