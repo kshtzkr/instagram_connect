@@ -133,6 +133,15 @@ RSpec.describe InstagramConnect::Auth::FacebookLogin do
     expect(strategy.scopes).to include("instagram_manage_messages").and include("pages_manage_metadata")
   end
 
+  # pages_messaging is checked when subscribing the PAGE, not when calling the
+  # messaging endpoints — so dropping it breaks nothing that any other spec
+  # exercises, and silently stops Meta delivering webhooks at all.
+  it "asks for pages_messaging, without which the Page can never be subscribed" do
+    strategy = described_class.new(config)
+
+    expect(strategy.scopes).to include("pages_messaging")
+  end
+
   it "builds an authorize URL on the FB dialog" do
     url = strategy.authorize_url(redirect_uri: "https://app.test/cb", state: "s")
     expect(url).to start_with("https://www.facebook.com/v21.0/dialog/oauth?")
