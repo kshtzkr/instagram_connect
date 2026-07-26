@@ -166,7 +166,11 @@ module InstagramConnect
     # Facebook-Login path that is the PAGE, not the Instagram user — verified
     # in production, where the Instagram user id answered with a capability
     # error while holding a perfectly good Page token.
-    def list_conversations(node_id: @ig_user_id, limit: 50)
+    # limit defaults low deliberately. Meta rejected 50 outright on a live
+    # account with "Please reduce the amount of data you're asking for" — the
+    # conversations edge is expensive per row, and the cursor walk means a
+    # smaller page costs nothing but an extra round trip.
+    def list_conversations(node_id: @ig_user_id, limit: 20)
       collect("/#{require_ig_user_id(node_id)}/conversations",
               { platform: "instagram", fields: "id,updated_time", limit: limit })
     end

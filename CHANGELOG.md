@@ -6,6 +6,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-07-26
+
+### Fixed
+
+- **The Page was never subscribed, so Meta delivered nothing at all.**
+  `POST /{page-id}/subscribed_apps` takes Meta's **Page** field vocabulary; the gem sent the
+  **Instagram** object's names. Meta rejects the entire call — every field, not just the offender —
+  on the first name it does not recognise:
+
+      (#100) Param subscribed_fields[4] must be one of {...} - got "messaging_seen"
+
+  So a correctly configured, published app with a valid Page token received zero webhooks. The two
+  lists are now deliberately separate: `subscribed_fields` is what ingest can parse, and
+  `page_subscribed_fields` translates it to Page names (`messaging_seen` → `message_reads`,
+  `messaging_referral` → `messaging_referrals`, `messaging_handover` → `messaging_handovers`) and
+  drops the four that exist only on the `instagram` object and are subscribed in the app dashboard
+  instead (`comments`, `live_comments`, `mentions`, `story_insights`).
+- **Conversation sync was rejected for asking too much.** Meta answered a 50-per-page conversations
+  walk with "Please reduce the amount of data you're asking for". The default page size is now 20;
+  the cursor walk makes a smaller page cost one extra round trip and nothing else.
+
+
 ## [0.3.3] - 2026-07-26
 
 ### Fixed
