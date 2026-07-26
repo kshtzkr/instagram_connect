@@ -6,6 +6,28 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-07-26
+
+### Fixed
+
+- **`pages_messaging` was never requested, so the Page could never be subscribed and Meta delivered
+  nothing.** The permission is checked when subscribing a Page to the app — not when calling the
+  messaging endpoints — so its absence broke nothing visible and stopped every webhook:
+
+  ```
+  (#200) To subscribe to the messages field, one of these permissions is needed: pages_messaging
+  ```
+
+  `subscribed_apps` rejects the entire call on the first field it cannot authorise, so a published
+  app holding a valid Page token, with every dashboard field ticked, received nothing at all.
+
+### Upgrading
+
+Existing accounts hold a token issued before this scope existed and **must reconnect** — a token's
+scopes are fixed at issue. The host's Meta app also needs a use case that offers `pages_messaging`
+("Engage with customers on Messenger from Meta"); the Instagram and Pages use cases do not.
+
+
 ## [0.3.4] - 2026-07-26
 
 ### Fixed

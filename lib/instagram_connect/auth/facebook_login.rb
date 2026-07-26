@@ -7,6 +7,17 @@ module InstagramConnect
     class FacebookLogin < Strategy
       GRAPH = "https://graph.facebook.com".freeze
       DIALOG = "https://www.facebook.com".freeze
+      # pages_messaging is what Meta checks when subscribing the PAGE to this app,
+      # not when calling the messaging endpoints — so its absence failed silently
+      # in the one place nothing was watching:
+      #
+      #   (#200) To subscribe to the messages field, one of these permissions is
+      #          needed: pages_messaging
+      #
+      # subscribed_apps rejects the whole call on the first field it cannot
+      # authorise, so without this scope the Page is never subscribed and Meta
+      # delivers nothing — for an app that is published, holds a valid Page
+      # token, and looks correct at every other step.
       DEFAULT_SCOPES = %w[
         instagram_basic
         instagram_manage_messages
@@ -15,6 +26,7 @@ module InstagramConnect
         pages_show_list
         pages_manage_metadata
         pages_read_engagement
+        pages_messaging
       ].freeze
 
       def graph_host
