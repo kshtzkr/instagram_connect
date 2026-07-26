@@ -10,7 +10,7 @@ RSpec.describe InstagramConnect::SyncConversationsJob do
   end
 
   def stub_threads(ids)
-    stub_request(:get, "#{base}/US/conversations").with(query: hash_including({}))
+    stub_request(:get, "#{base}/PAGE1/conversations").with(query: hash_including({}))
       .to_return(status: 200, body: { data: ids.map { |id| { id: id } } }.to_json, headers: json)
   end
 
@@ -86,8 +86,46 @@ RSpec.describe InstagramConnect::SyncConversationsJob do
     expect(InstagramConnect::Conversation.count).to eq(0)
   end
 
-  it "does nothing when the thread listing fails" do
+  # The conversations edge belongs to the Page on the Facebook-Login path —
+  # aiming it at the Instagram user id fails with a capability error, which is
+  # exactly what happened in production.
+  it "lists conversations from the Page, not the Instagram user" do
+    stub_threads([])
+
+    described_class.perform_now(account.id)
+
+    expect(WebMock).to have_requested(:get, "#{base}/PAGE1/conversations")
+      .with(query: hash_including("platform" => "instagram"))
+  end
+
+  it "falls back to the Instagram user id when there is no Page" do
+    account.update!(page_id: nil)
     stub_request(:get, "#{base}/US/conversations").with(query: hash_including({}))
+      .to_return(status: 200, body: { data: [] }.to_json,
+                 headers: { "Content-Type" => "application/json" })
+
+    described_class.perform_now(account.id)
+
+    expect(WebMock).to have_requested(:get, "#{base}/US/conversations")
+      .with(query: hash_including({}))
+  end
+
+  # Silence here cost a production afternoon: the job "succeeded" in 600ms and
+  # imported nothing, and every screen said nothing had failed.
+  it "says WHY when the listing fails" do
+    stub_request(:get, "#{base}/PAGE1/conversations").with(query: hash_including({}))
+      .to_return(status: 400, body: { error: { message: "capability denied" } }.to_json,
+                 headers: { "Content-Type" => "application/json" })
+    allow(described_class.logger).to receive(:error)
+
+    described_class.perform_now(account.id)
+
+    expect(described_class.logger).to have_received(:error)
+      .with(a_string_including("capability denied"))
+  end
+
+  it "does nothing when the thread listing fails" do
+    stub_request(:get, "#{base}/PAGE1/conversations").with(query: hash_including({}))
       .to_return(status: 400, body: { error: { message: "nope" } }.to_json, headers: json)
 
     expect { described_class.perform_now(account.id) }.not_to change(InstagramConnect::Conversation, :count)

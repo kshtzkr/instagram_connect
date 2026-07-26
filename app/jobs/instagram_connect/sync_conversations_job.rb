@@ -16,8 +16,17 @@ module InstagramConnect
       account = Account.find_by(id: account_id)
       return if account.nil? || !account.active?
 
-      threads = account.client.list_conversations
-      return unless threads.success?
+      # The conversations edge lives on the Page for Facebook-Login accounts and
+      # on the Instagram user for Instagram-Login ones.
+      node = account.page_id.presence || account.ig_user_id
+      threads = account.client.list_conversations(node_id: node)
+      unless threads.success?
+        # A sync that fails must say so. Swallowing this once cost a production
+        # afternoon: the job "succeeded" in 600ms and imported nothing.
+        logger.error("[instagram_connect] conversation sync failed for " \
+                     "account=#{account.id} node=#{node}: #{threads.error_message}")
+        return
+      end
 
       Array(threads.data["data"]).each { |thread| sync_thread(account, thread["id"]) }
     end

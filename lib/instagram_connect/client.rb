@@ -161,8 +161,13 @@ module InstagramConnect
     # NEW activity, so without this an inbox starts empty and stays empty until
     # somebody happens to message in. Meta returns the 20 most recent messages
     # per thread and no more — that is the whole history available to any app.
-    def list_conversations(ig_user_id: @ig_user_id, limit: 50)
-      collect("/#{require_ig_user_id(ig_user_id)}/conversations",
+    #
+    # node_id is the object that OWNS the conversations edge, and on the
+    # Facebook-Login path that is the PAGE, not the Instagram user — verified
+    # in production, where the Instagram user id answered with a capability
+    # error while holding a perfectly good Page token.
+    def list_conversations(node_id: @ig_user_id, limit: 50)
+      collect("/#{require_ig_user_id(node_id)}/conversations",
               { platform: "instagram", fields: "id,updated_time", limit: limit })
     end
 

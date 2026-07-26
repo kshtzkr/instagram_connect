@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-07-26
+
+### Fixed
+
+- **Conversation sync imported nothing on the Facebook-Login path.** The conversations edge belongs
+  to the PAGE, not the Instagram user — `/{ig-user-id}/conversations` answers with a capability
+  error even when holding a valid Page token. The sync now targets the Page and falls back to the
+  Instagram user id only when there is no Page (the Instagram-Login path). Found in production,
+  where the job "succeeded" in 600ms twice while importing zero threads.
+- **That failure was silent.** The job returned quietly when the listing call failed, so nothing —
+  logs, health, operator — ever learned why. It now logs the account, the node it asked, and Meta's
+  own error message.
+
+
 ## [0.3.2] - 2026-07-26
 
 ### Added
