@@ -87,8 +87,10 @@ module InstagramConnect
         return
       end
 
-      pages = graph_get(account, "/me/accounts", fields: "id,access_token")
-      page = Array(pages["data"]).find { |p| p["id"].to_s == account.page_id.to_s }
+      # Read the Page directly rather than hunting for it in /me/accounts: we
+      # already know its id, and the listing omits Pages granted through the
+      # Login-for-Business asset picker even though they read fine by id.
+      page = graph_get(account, "/#{account.page_id}", fields: "id,access_token")
 
       if page.nil? || page["access_token"].blank?
         account.update!(needs_reconnect: true,

@@ -68,13 +68,83 @@ RSpec.describe InstagramConnect::Connect do
       expect(account.page_id).to eq("PAGE1")
     end
 
-    it "raises when no Page has a linked IG business account" do
+    # /me/accounts lists only the Pages a token may enumerate. A Page granted
+    # through the Login-for-Business asset picker is absent from it while reading
+    # fine by id — the listing comes back EMPTY and the account is still there.
+    it "falls back to the assets the token was granted when the listing is empty" do
+      stub_request(:get, "https://graph.facebook.com/v21.0/me/accounts")
+        .with(query: hash_including({}))
+        .to_return(status: 200, body: { data: [] }.to_json, headers: json)
+      stub_request(:get, "https://graph.facebook.com/v21.0/debug_token")
+        .with(query: hash_including({}))
+        .to_return(status: 200, body: {
+          data: { granular_scopes: [ { scope: "pages_show_list", target_ids: [ "PAGE9" ] } ] }
+        }.to_json, headers: json)
+      stub_request(:get, "https://graph.facebook.com/v21.0/PAGE9")
+        .with(query: hash_including({}))
+        .to_return(status: 200, body: {
+          id: "PAGE9", instagram_business_account: { id: "IGBIZ9" }
+        }.to_json, headers: json)
+
+      account = described_class.call(code: "code", redirect_uri: "r", config: config(auth_path: :facebook_login))
+
+      expect(account.ig_user_id).to eq("IGBIZ9")
+      expect(account.page_id).to eq("PAGE9")
+    end
+
+    it "ignores a granted asset that is not a Page with an Instagram account" do
+      stub_request(:get, "https://graph.facebook.com/v21.0/me/accounts")
+        .with(query: hash_including({}))
+        .to_return(status: 200, body: { data: [] }.to_json, headers: json)
+      stub_request(:get, "https://graph.facebook.com/v21.0/debug_token")
+        .with(query: hash_including({}))
+        .to_return(status: 200, body: {
+          data: { granular_scopes: [ { scope: "pages_show_list", target_ids: [ "NOPE" ] } ] }
+        }.to_json, headers: json)
+      stub_request(:get, "https://graph.facebook.com/v21.0/NOPE")
+        .with(query: hash_including({}))
+        .to_return(status: 404, body: { error: { message: "gone" } }.to_json, headers: json)
+
+      expect { described_class.call(code: "code", redirect_uri: "r", config: config(auth_path: :facebook_login)) }
+        .to raise_error(InstagramConnect::ConfigurationError, /no Page with a linked Instagram/)
+    end
+
+    it "says so plainly when neither the listing nor the grants yield a Page" do
       stub_request(:get, "https://graph.facebook.com/v21.0/me/accounts")
         .with(query: hash_including({}))
         .to_return(status: 200, body: { data: [ { id: "PAGE1" } ] }.to_json, headers: json)
+      stub_request(:get, "https://graph.facebook.com/v21.0/debug_token")
+        .with(query: hash_including({}))
+        .to_return(status: 200, body: { data: {} }.to_json, headers: json)
 
       expect { described_class.call(code: "code", redirect_uri: "r", config: config(auth_path: :facebook_login)) }
-        .to raise_error(InstagramConnect::ConfigurationError, /no Instagram business account/)
+        .to raise_error(InstagramConnect::ConfigurationError, /no Page with a linked Instagram/)
+    end
+
+    # A debug_token that itself fails must not crash the connect — it just means
+    # this fallback has nothing to offer, and the error below is still accurate.
+    it "survives the grant lookup failing" do
+      stub_request(:get, "https://graph.facebook.com/v21.0/me/accounts")
+        .with(query: hash_including({}))
+        .to_return(status: 200, body: { data: [] }.to_json, headers: json)
+      stub_request(:get, "https://graph.facebook.com/v21.0/debug_token")
+        .with(query: hash_including({}))
+        .to_return(status: 400, body: { error: { message: "bad app token" } }.to_json, headers: json)
+
+      expect { described_class.call(code: "code", redirect_uri: "r", config: config(auth_path: :facebook_login)) }
+        .to raise_error(InstagramConnect::ConfigurationError, /no Page with a linked Instagram/)
+    end
+
+    # A failed call and an empty list are different facts. Reporting the first as
+    # the second sent an operator hunting a Page link that was never broken.
+    it "reports an API failure as a failure, not as a missing account" do
+      stub_request(:get, "https://graph.facebook.com/v21.0/me/accounts")
+        .with(query: hash_including({}))
+        .to_return(status: 400, body: { error: { message: "Invalid OAuth token", code: 190 } }.to_json,
+                   headers: json)
+
+      expect { described_class.call(code: "code", redirect_uri: "r", config: config(auth_path: :facebook_login)) }
+        .to raise_error(InstagramConnect::ApiError, /Invalid OAuth token/)
     end
   end
 end
