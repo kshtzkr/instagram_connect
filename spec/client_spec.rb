@@ -111,6 +111,15 @@ RSpec.describe InstagramConnect::Client do
       expect(client.list_media.data["data"]).to eq([ { "id" => "m_1" } ])
     end
 
+    it "lists live stories without the engagement fields stories don't have" do
+      stub_ok(:get, "/IGID/stories", body: { data: [ { id: "s_1" } ] })
+
+      expect(client.list_stories.data["data"]).to eq([ { "id" => "s_1" } ])
+      expect(WebMock).to have_requested(:get, %r{/IGID/stories})
+        .with(query: hash_including("fields" => InstagramConnect::Client::STORY_FIELDS))
+      expect(InstagramConnect::Client::STORY_FIELDS).not_to include("like_count")
+    end
+
     it "reads media insights" do
       stub_ok(:get, "/m_1/insights", body: { data: [ { name: "reach" } ] })
       expect(client.media_insights(media_id: "m_1")).to be_success

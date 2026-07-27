@@ -17,6 +17,10 @@ module InstagramConnect
     validates :ig_media_id, presence: true, uniqueness: { scope: :account_id }
 
     scope :stories, -> { where(media_product_type: "STORY") }
+    # Everything that belongs on a feed grid. NULL-safe on purpose: rows
+    # synced before media_product_type was requested have nil there, and a
+    # plain where.not would silently drop them.
+    scope :posts, -> { where("media_product_type IS NULL OR media_product_type <> 'STORY'") }
     scope :recent, -> { order(Arel.sql("posted_at IS NULL, posted_at DESC")) }
 
     # Upserts by Meta's id. Media arrives from several directions — a webhook
@@ -39,6 +43,13 @@ module InstagramConnect
 
     def story?
       media_product_type == "STORY"
+    end
+
+    # A story lives for 24 hours from posting; after that Instagram drops it
+    # and its CDN URLs die. Unknown posted_at counts as expired — better a
+    # grayed card than a player pointed at a dead URL.
+    def live_story?
+      story? && posted_at.present? && posted_at > 24.hours.ago
     end
   end
 end

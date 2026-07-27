@@ -99,4 +99,23 @@ RSpec.describe "media, mentions and snapshots" do
       expect(snapshot.errors.attribute_names).to include(:subject_type, :source)
     end
   end
+  describe ".posts" do
+    let(:account) do
+      InstagramConnect::Account.create!(ig_user_id: "IG9", auth_path: "facebook_login",
+                                        access_token: "t")
+    end
+
+    # NULL-safe on purpose: rows synced before media_product_type was
+    # requested have nil there and still belong on the grid.
+    it "keeps feed posts and pre-0.3.9 rows, drops stories" do
+      feed  = InstagramConnect::MediaItem.record(account: account, ig_media_id: "p-feed",
+                                                 media_product_type: "FEED")
+      young = InstagramConnect::MediaItem.record(account: account, ig_media_id: "p-nil")
+      InstagramConnect::MediaItem.record(account: account, ig_media_id: "p-story",
+                                         media_product_type: "STORY")
+
+      expect(InstagramConnect::MediaItem.posts).to contain_exactly(feed, young)
+    end
+  end
+
 end
