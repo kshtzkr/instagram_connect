@@ -6,6 +6,19 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.12] - 2026-07-27
+
+### Fixed
+
+- **An undecryptable access token is caught here, not by Meta.** Tokens are encrypted at rest;
+  with `support_unencrypted_data` on, a decrypt that fails (rotated or missing keys) hands the
+  ENVELOPE back instead of raising, and every Graph call then sent that JSON blob as the bearer
+  token — Meta answered `Invalid OAuth access token - Cannot parse access token` and nothing said
+  the cause was local. `Account#client` now refuses to build, stamps `readiness_error` with the
+  fix ("reconnect this Instagram account"), and raises `TokenUnreadableError`, which jobs log and
+  stop on rather than retrying forever. `Account#token_readable?` is public for host health screens.
+
+
 ## [0.3.11] - 2026-07-27
 
 ### Fixed
