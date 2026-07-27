@@ -17,6 +17,7 @@ All notable changes to this project are documented here. The format follows
 - **Carousel slides.** `MEDIA_FIELDS` now requests `children{id,media_type,media_url,thumbnail_url}`
   and the new `children` json column stores them, so hosts can render every frame of a carousel,
   not just the cover. `media_product_type` is requested too (FEED vs REELS vs STORY).
+- **`MediaItem#live_story?`** — a story lives 24 hours from posting; unknown posted_at counts as expired.
 - **`MediaItem.posts` scope** — everything that belongs on a feed grid. NULL-safe: rows synced
   before `media_product_type` was requested still count as posts.
 - `Client#list_stories`, and the media field lists now live on `Client`

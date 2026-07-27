@@ -97,4 +97,24 @@ RSpec.describe InstagramConnect::SyncStoriesJob do
 
     expect(InstagramConnect::MediaItem.find_by(ig_media_id: "s-3").posted_at).to be_nil
   end
+  describe "#live_story?" do
+    def story_row(posted_at)
+      InstagramConnect::MediaItem.record(account: account, ig_media_id: "s-#{posted_at.to_i}",
+                                         media_product_type: "STORY", posted_at: posted_at)
+    end
+
+    it "is live inside 24 hours, expired after, expired when posting time is unknown" do
+      expect(story_row(2.hours.ago).live_story?).to be(true)
+      expect(story_row(25.hours.ago).live_story?).to be(false)
+      expect(InstagramConnect::MediaItem.record(account: account, ig_media_id: "s-nil",
+                                                media_product_type: "STORY").live_story?).to be(false)
+    end
+
+    it "is never live for a feed post" do
+      feed = InstagramConnect::MediaItem.record(account: account, ig_media_id: "p-1",
+                                                media_product_type: "FEED", posted_at: 1.hour.ago)
+      expect(feed.live_story?).to be(false)
+    end
+  end
+
 end

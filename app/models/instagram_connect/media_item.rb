@@ -44,5 +44,12 @@ module InstagramConnect
     def story?
       media_product_type == "STORY"
     end
+
+    # A story lives for 24 hours from posting; after that Instagram drops it
+    # and its CDN URLs die. Unknown posted_at counts as expired — better a
+    # grayed card than a player pointed at a dead URL.
+    def live_story?
+      story? && posted_at.present? && posted_at > 24.hours.ago
+    end
   end
 end
