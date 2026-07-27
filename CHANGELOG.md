@@ -10,6 +10,14 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- **An echo of a message this system sent no longer collides with it.** Every outbound send stores
+  Meta's mid; the echo of that same message then arrived and the handler called `create!` on the
+  same mid, so the event was banked `failed` and every replay failed again — forever
+  (`PG::UniqueViolation` on `index_instagram_connect_messages_on_account_and_mid`, hourly, in
+  production). The echo now ENRICHES the row it is echoing — filling only what the original write
+  could not know — and never rewrites direction, status, source or body, so a CMS-sent message
+  cannot be turned into one that looks sent from the phone.
+
 - **The readiness pass was the one path still shipping an unreadable token to Meta.** It builds its
   own `Authorization` header rather than going through `Account#client`, so 0.3.12's guard never
   covered it: Meta answered "Cannot parse access token" and the failure was recorded as if the

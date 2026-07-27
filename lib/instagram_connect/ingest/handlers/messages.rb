@@ -15,6 +15,17 @@ module InstagramConnect
         end
 
         def call
+          # An echo of a message this system already sent is a CONFIRMATION,
+          # not a new message: the send stored the mid first, so create! hits
+          # the unique index on [account_id, ig_message_id] and the event is
+          # banked failed — then every replay fails again, forever. Enrich the
+          # row Meta is echoing rather than duplicating it, and do not
+          # re-register it on the conversation (it was registered when sent).
+          if (existing = existing_message)
+            enrich(existing)
+            return existing
+          end
+
           message = InstagramConnect::Message.create!(
             conversation: conversation,
             direction: echo? ? "outbound" : "inbound",
@@ -48,6 +59,28 @@ module InstagramConnect
         end
 
         private
+
+        def existing_message
+          return if mid.blank?
+
+          InstagramConnect::Message.find_by(account_id: conversation.account_id,
+                                            ig_message_id: mid)
+        end
+
+        # Fill only what the original write could not know — Meta's clock, the
+        # media it processed, the story it was a reply to. Direction, status,
+        # source and body stay as first written: an echo must not rewrite a
+        # CMS-sent message into one that looks sent from the phone.
+        def enrich(message)
+          message.sent_at ||= envelope.occurred_at
+          message.media_status ||= media_status
+          message.media_kind ||= attachments.first&.dig("type")
+          message.story_id ||= story&.dig("id")
+          message.story_url ||= story&.dig("url")
+          message.save! if message.changed?
+          store_attachments(message) if message.attachments.none?
+          message
+        end
 
         def payload
           event["message"] || {}
