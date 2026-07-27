@@ -71,6 +71,21 @@ RSpec.describe InstagramConnect::SyncCommentsJob do
     expect(rows.first.commented_at).to be_present
   end
 
+  # from{...} and parent_id are Facebook-comment fields: one refused field
+  # fails the whole Instagram call with (#100) and zero comments import. The
+  # request must carry only the documented Instagram-comment fields; the
+  # upsert still uses from/parent_id opportunistically when Meta sends them.
+  it "requests only fields Instagram comments actually support" do
+    comments_page([])
+
+    described_class.perform_now(account.id, "MEDIA1")
+
+    expect(WebMock).to have_requested(:get, "#{base}/MEDIA1/comments")
+      .with(query: hash_including("fields" => described_class::COMMENT_FIELDS))
+    expect(described_class::COMMENT_FIELDS).not_to include("from")
+    expect(described_class::COMMENT_FIELDS).not_to include("parent_id")
+  end
+
   it "logs loudly and stores nothing when the walk fails" do
     stub_request(:get, "#{base}/MEDIA1/comments").with(query: hash_including({}))
       .to_return(status: 400, body: { error: { message: "nope", code: 100 } }.to_json,
