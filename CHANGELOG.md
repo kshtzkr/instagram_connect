@@ -6,6 +6,27 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.9] - 2026-07-27
+
+### Added
+
+- **Stories sync.** `SyncStoriesJob` walks the `/stories` edge and mirrors live stories as
+  `media_product_type: STORY` rows. Meta lists only the stories inside their 24 hours and sends no
+  expiry webhook, so the job upserts what it sees and marks nothing — expired stories keep their
+  rows forever, same never-delete rule as posts.
+- **Carousel slides.** `MEDIA_FIELDS` now requests `children{id,media_type,media_url,thumbnail_url}`
+  and the new `children` json column stores them, so hosts can render every frame of a carousel,
+  not just the cover. `media_product_type` is requested too (FEED vs REELS vs STORY).
+- **`MediaItem.posts` scope** — everything that belongs on a feed grid. NULL-safe: rows synced
+  before `media_product_type` was requested still count as posts.
+- `Client#list_stories`, and the media field lists now live on `Client`
+  (`Client::MEDIA_FIELDS` / `Client::STORY_FIELDS`).
+
+### Migration
+
+- `add_column :instagram_connect_media, :children, :json` (`if_not_exists`).
+
+
 ## [0.3.8] - 2026-07-27
 
 ### Added

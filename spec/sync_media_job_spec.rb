@@ -33,13 +33,34 @@ RSpec.describe InstagramConnect::SyncMediaJob do
     expect(item.posted_at).to be_present
   end
 
+  it "keeps a carousel's slides so a host can render every frame" do
+    single_page([ { id: "m-car", media_type: "CAROUSEL_ALBUM", media_product_type: "FEED",
+                    caption: "Five frames",
+                    children: { data: [
+                      { id: "c-1", media_type: "IMAGE", media_url: "https://cdn/1.jpg" },
+                      { id: "c-2", media_type: "VIDEO", media_url: "https://cdn/2.mp4",
+                        thumbnail_url: "https://cdn/2.jpg" }
+                    ] } } ])
+
+    described_class.perform_now(account.id)
+
+    item = InstagramConnect::MediaItem.find_by(ig_media_id: "m-car")
+    expect(item.media_product_type).to eq("FEED")
+    expect(item.children.length).to eq(2)
+    expect(item.children.last).to include("media_type" => "VIDEO",
+                                          "media_url" => "https://cdn/2.mp4",
+                                          "thumbnail_url" => "https://cdn/2.jpg")
+  end
+
   it "asks Meta for the engagement fields" do
     single_page([])
 
     described_class.perform_now(account.id)
 
     expect(WebMock).to have_requested(:get, "#{base}/IGUSER/media")
-      .with(query: hash_including("fields" => a_string_matching(/like_count,comments_count/)))
+      .with(query: hash_including("fields" => a_string_matching(
+        /like_count,comments_count,media_product_type,children\{/
+      )))
   end
 
   it "updates rather than duplicates a post it has seen before" do

@@ -131,11 +131,28 @@ module InstagramConnect
 
     # --- Reads -----------------------------------------------------------
 
+    # Everything the mirror stores about a post: engagement counts come straight
+    # off the media node (no insights permission needed for the account's own
+    # posts), thumbnail_url is the video poster frame, media_product_type tells
+    # FEED from REELS, and children are a carousel's slides.
+    MEDIA_FIELDS = "id,caption,media_type,media_url,thumbnail_url,permalink," \
+                   "timestamp,like_count,comments_count,media_product_type," \
+                   "children{id,media_type,media_url,thumbnail_url}".freeze
+
+    # A story is a media node too, but the engagement fields don't exist on it.
+    STORY_FIELDS = "id,caption,media_type,media_url,thumbnail_url,permalink," \
+                   "timestamp,media_product_type".freeze
+
     def list_media(ig_user_id: @ig_user_id, limit: 25)
       get("/#{require_ig_user_id(ig_user_id)}/media",
-          { fields: "id,caption,media_type,media_url,thumbnail_url,permalink," \
-                    "timestamp,like_count,comments_count",
-            limit: limit })
+          { fields: MEDIA_FIELDS, limit: limit })
+    end
+
+    # The account's LIVE stories — Meta returns only the ones still inside
+    # their 24 hours. Expired stories simply stop appearing here.
+    def list_stories(ig_user_id: @ig_user_id, limit: 25)
+      get("/#{require_ig_user_id(ig_user_id)}/stories",
+          { fields: STORY_FIELDS, limit: limit })
     end
 
     def media_insights(media_id:, metrics: %w[reach likes comments])
