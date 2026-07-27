@@ -88,4 +88,28 @@ RSpec.describe "an access token this process cannot decrypt" do
     end
   end
 
+  # The send job claims the message into "sending" BEFORE building a client,
+  # so the generic swallow left the bubble spinning forever with no failed
+  # state, no retry button, and no reason on screen — production, 2026-07-28.
+  describe "a send against an unreadable token" do
+    it "fails the message visibly instead of stranding it in sending" do
+      conversation = InstagramConnect::Conversation.create!(
+        account: account, igsid: "CUST1", last_inbound_at: 5.minutes.ago
+      )
+      message = InstagramConnect::Message.create!(
+        conversation: conversation, direction: "outbound", status: "pending",
+        kind: "dm", source: "manual", body: "hi"
+      )
+      store_envelope!
+
+      InstagramConnect::SendMessageJob.perform_now(message.id)
+
+      message.reload
+      expect(message.status).to eq("failed")
+      expect(message.failure_reason).to eq("token_unreadable")
+      expect(message.error_message).to match(/reconnect/i)
+      expect(WebMock).not_to have_requested(:any, /graph\.facebook\.com/)
+    end
+  end
+
 end
