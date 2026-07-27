@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.11] - 2026-07-27
+
+### Fixed
+
+- **Long reply threads import whole.** The `replies{}` expansion is a single nested page; a
+  comment whose thread ran past it silently lost the tail. When the inline page says there is
+  more, the comment's replies edge is now walked in full — Instagram threads are two-level,
+  so this is the entire conversation.
+
+
 ## [0.3.10] - 2026-07-27
 
 ### Added

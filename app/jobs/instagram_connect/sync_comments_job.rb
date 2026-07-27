@@ -38,15 +38,34 @@ module InstagramConnect
 
       Array(result.data["data"]).each do |item|
         upsert(account, ig_media_id, item)
-        Array(item.dig("replies", "data")).each do |reply|
-          # Meta omits parent_id inside the replies expansion — the nesting
-          # itself is the statement.
-          upsert(account, ig_media_id, reply.merge("parent_id" => reply["parent_id"] || item["id"]))
-        end
+        import_replies(account, ig_media_id, item)
       end
     end
 
     private
+
+    # The replies{} expansion is a single nested page. A comment whose thread
+    # runs past it gets its replies edge walked in full — Instagram threads
+    # are two-level, so this is the whole conversation, not a rabbit hole.
+    def import_replies(account, ig_media_id, item)
+      inline = Array(item.dig("replies", "data"))
+      inline.each do |reply|
+        # Meta omits parent_id inside the replies expansion — the nesting
+        # itself is the statement.
+        upsert(account, ig_media_id, reply.merge("parent_id" => reply["parent_id"] || item["id"]))
+      end
+      return if item.dig("replies", "paging", "next").blank?
+
+      walk = account.client.collect("/#{item['id']}/replies",
+                                    { fields: REPLY_FIELDS, limit: 50 })
+      unless walk.success?
+        return logger.error("[instagram_connect] replies walk failed for "                             "comment=#{item['id']}: #{walk.error_message}")
+      end
+
+      Array(walk.data["data"]).each do |reply|
+        upsert(account, ig_media_id, reply.merge("parent_id" => reply["parent_id"] || item["id"]))
+      end
+    end
 
     def upsert(account, ig_media_id, item)
       comment = Comment.record(
