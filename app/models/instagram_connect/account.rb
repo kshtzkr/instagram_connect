@@ -24,6 +24,13 @@ module InstagramConnect
       encrypts :page_access_token
     end
 
+    # An Active Record Encryption envelope, as stored. With
+    # support_unencrypted_data on, a decrypt that FAILS (rotated or missing
+    # keys) hands the envelope back instead of raising — so an unreadable
+    # token reaches Meta as this JSON blob and comes back as the baffling
+    # "Cannot parse access token", with every call dead and nothing saying why.
+    ENCRYPTED_ENVELOPE = /\A\{"p":/
+
     # Every Instagram messaging call and the webhook subscription are Page-token
     # operations. Falling back to the user token keeps a freshly connected
     # account working until the readiness pass swaps in the Page one.
@@ -31,10 +38,30 @@ module InstagramConnect
       page_access_token.presence || access_token
     end
 
+    # False when the stored token cannot be decrypted with the keys this
+    # process has. Recovery is always the same: reconnect the account, which
+    # writes fresh tokens under the current keys.
+    def token_readable?
+      token = api_token.to_s
+      token.present? && !token.match?(ENCRYPTED_ENVELOPE)
+    end
+
+    TOKEN_UNREADABLE_MESSAGE =
+      "Stored access token cannot be decrypted with the current encryption " \
+      "keys — reconnect this Instagram account to store a fresh one.".freeze
+
     # The only place a Client should be built. Constructing one directly picks
     # up the *global* auth path, which is wrong for any host with accounts on
     # both paths — and wrong silently, which is worse.
     def client
+      # Refuse to build a client around a token Meta can only reject, and
+      # record WHY on the row so the host's health screen can say it out loud
+      # instead of every screen quietly rendering empty.
+      unless token_readable?
+        update_columns(readiness_error: TOKEN_UNREADABLE_MESSAGE.truncate(255))
+        raise InstagramConnect::TokenUnreadableError, TOKEN_UNREADABLE_MESSAGE
+      end
+
       InstagramConnect::Client.new(
         access_token: api_token,
         ig_user_id: ig_user_id,

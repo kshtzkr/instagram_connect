@@ -22,4 +22,10 @@ module InstagramConnect
 
   # Raised when an inbound webhook fails HMAC signature verification.
   class SignatureError < Error; end
+
+  # The stored token could not be decrypted with this process's encryption
+  # keys, so it is an envelope rather than a token. Raised before any Graph
+  # call, because sending it produces only Meta's opaque "Cannot parse access
+  # token" with no hint that the cause is local.
+  class TokenUnreadableError < Error; end
 end
