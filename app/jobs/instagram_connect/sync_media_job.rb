@@ -45,7 +45,14 @@ module InstagramConnect
       end
 
       Array(result.data["data"]).each { |item| upsert(account, item) }
-      mark_removed(account, started_at) if full
+      if full
+        mark_removed(account, started_at)
+        # The full walk is the moment to fetch comment history too: webhooks
+        # only cover comments made after the subscription existed. One extra
+        # job per post that actually has comments — bounded by reality, and
+        # the walk is operator-triggered.
+        backfill_comments(account, result)
+      end
     end
 
     private
@@ -76,6 +83,14 @@ module InstagramConnect
       # Explicit, because record compacts nils out of its attributes: a post
       # that reappears in the listing un-grays.
       media.update!(removed_from_instagram_at: nil) if media.removed_from_instagram_at
+    end
+
+    def backfill_comments(account, result)
+      Array(result.data["data"]).each do |item|
+        next unless item["comments_count"].to_i.positive?
+
+        SyncCommentsJob.perform_later(account.id, item["id"].to_s)
+      end
     end
 
     def mark_removed(account, started_at)
