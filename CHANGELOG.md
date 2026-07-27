@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.10] - 2026-07-27
+
+### Added
+
+- **Comment history sync.** `SyncCommentsJob` walks a post's comments edge — replies expanded,
+  cursors followed — and upserts by Meta's id, so webhook-created rows are enriched, never
+  duplicated. Webhooks only cover comments made after the subscription existed; this imports
+  everything before. `SyncMediaJob`'s full walk now enqueues one comment walk per post that
+  actually has comments. Meta stays the source of truth for hidden, both directions.
+
+
 ## [0.3.9] - 2026-07-27
 
 ### Added

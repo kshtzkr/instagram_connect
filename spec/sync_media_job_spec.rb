@@ -173,4 +173,20 @@ RSpec.describe InstagramConnect::SyncMediaJob do
       .not_to change(InstagramConnect::MediaItem, :count)
     expect { described_class.perform_now(-1) }.not_to raise_error
   end
+  describe "comment history backfill" do
+    it "enqueues one comment walk per commented post, full walks only" do
+      single_page([ { id: "m-quiet", media_type: "IMAGE", comments_count: 0 },
+                    { id: "m-busy", media_type: "IMAGE", comments_count: 4 } ])
+
+      expect {
+        described_class.perform_now(account.id, full: true)
+      }.to have_enqueued_job(InstagramConnect::SyncCommentsJob)
+        .with(account.id, "m-busy").exactly(:once)
+
+      expect {
+        described_class.perform_now(account.id)
+      }.not_to have_enqueued_job(InstagramConnect::SyncCommentsJob)
+    end
+  end
+
 end
