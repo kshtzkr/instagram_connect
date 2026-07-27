@@ -42,6 +42,12 @@ module InstagramConnect
       sent_at || created_at
     end
 
+    # The attachment half of this send is done. Mirrors delivered_parts_count
+    # for the text half, so a resumed job never re-sends the photo.
+    def attachment_delivered?
+      attachment_delivered_at.present?
+    end
+
     def deleted?
       deleted_at.present?
     end

@@ -6,6 +6,29 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.14] - 2026-07-28
+
+### Added
+
+- **Outbound attachments.** `UploadAttachmentJob` uploads a message's file to Meta and records the
+  reusable `attachment_upload_id`; `SendMessageJob` then sends the attachment BEFORE the words
+  about it, so the customer sees the photo and then the caption in the order the operator wrote
+  them. Two steps rather than one because a file Meta rejects (too large, wrong type) must fail
+  the message with THAT reason rather than the send's. Size ceilings are checked before an upload
+  is spent, and `attachment_delivered_at` is the resume cursor so a worker killed between the two
+  halves never shows the customer the photo twice. `upload_attachment`/`send_attachment` had
+  existed with zero callers since 0.1.
+
+### Fixed
+
+- An attachment-only message no longer posts an empty text alongside it: splitting `""` yields one
+  empty part, which was sent as a message.
+
+### Migration
+
+- `add_column :instagram_connect_messages, :attachment_delivered_at, :datetime` (`if_not_exists`).
+
+
 ## [0.3.13] - 2026-07-28
 
 ### Fixed
