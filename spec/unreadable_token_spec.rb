@@ -64,4 +64,28 @@ RSpec.describe "an access token this process cannot decrypt" do
     expect(account.token_readable?).to be(true)
     expect(account.client).to be_a(InstagramConnect::Client)
   end
+  # AccountReadinessJob builds its own Authorization header instead of going
+  # through Account#client, so the guard there never covered it: production
+  # kept shipping the envelope to Meta and recording the answer as if the
+  # SUBSCRIPTION were broken.
+  describe "the readiness pass, which builds its own header" do
+    it "skips the account and says the token is the problem" do
+      store_envelope!
+      InstagramConnect.configuration.app_id = "APP"
+
+      InstagramConnect::AccountReadinessJob.perform_now
+
+      expect(account.reload.readiness_error).to match(/cannot be decrypted/i)
+      expect(WebMock).not_to have_requested(:any, /graph\.facebook\.com/)
+    end
+
+    it "refuses to build an Authorization header around an unreadable token" do
+      store_envelope!
+      job = InstagramConnect::AccountReadinessJob.new
+
+      expect { job.send(:bearer, account) }
+        .to raise_error(InstagramConnect::TokenUnreadableError, /reconnect/i)
+    end
+  end
+
 end

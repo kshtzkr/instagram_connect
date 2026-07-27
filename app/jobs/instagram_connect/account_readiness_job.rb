@@ -64,6 +64,18 @@ module InstagramConnect
         # completing without raising.
         account.update_columns(readiness_error: nil) if account.readiness_error.present?
 
+        # This job builds its own Authorization header rather than going
+        # through Account#client, so the guard there does not cover it — and
+        # an unreadable token would be shipped to Meta as a bearer string,
+        # answered with "Cannot parse access token", and recorded as if the
+        # SUBSCRIPTION were the problem. Say what is actually wrong instead.
+        unless account.token_readable?
+          account.update_columns(readiness_error: Account::TOKEN_UNREADABLE_MESSAGE.truncate(255))
+          logger.error("[InstagramConnect] readiness skipped for account=#{account.id}: " \
+                       "#{Account::TOKEN_UNREADABLE_MESSAGE}")
+          next
+        end
+
         ensure_page_token(account)
         ensure_subscription(account)
       rescue StandardError => e
@@ -145,6 +157,10 @@ module InstagramConnect
     end
 
     def bearer(account)
+      unless account.token_readable?
+        raise InstagramConnect::TokenUnreadableError, Account::TOKEN_UNREADABLE_MESSAGE
+      end
+
       { "Authorization" => "Bearer #{account.api_token}" }
     end
 
