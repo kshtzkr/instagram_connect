@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.13] - 2026-07-28
+
+### Fixed
+
+- **The readiness pass was the one path still shipping an unreadable token to Meta.** It builds its
+  own `Authorization` header rather than going through `Account#client`, so 0.3.12's guard never
+  covered it: Meta answered "Cannot parse access token" and the failure was recorded as if the
+  SUBSCRIPTION were broken. It now skips such an account with the real reason on `readiness_error`,
+  and the header builder itself refuses, so any future caller in that job is covered too.
+
+
 ## [0.3.12] - 2026-07-27
 
 ### Fixed
