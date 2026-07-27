@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.7] - 2026-07-27
+
+### Added
+
+- **`SyncMediaJob` — the gem now owns the post mirror.** Walks the account's entire media listing
+  (single page by default, full history with cursors via `full: true`), upserting caption,
+  permalink, type and timestamps into `MediaItem`. A host built this app-side first; per the
+  boundary rule — the gem owns the Graph protocol and every Instagram row — it moves here, and the
+  host's copy should be deleted on upgrade.
+- **`removed_from_instagram_at` on media, with `MediaItem#removed?`.** Instagram sends no webhook
+  for a deleted post; absence from the account's own **completed** listing is the only signal. A
+  vanished post is stamped, never destroyed, so hosts can render it grayed and locked. A failed or
+  partial walk marks nothing. The migration uses `if_not_exists` because one host added the column
+  app-side before the gem owned it.
+- `SyncMediaJob.enqueue_throttled(account)` for screen-triggered refreshes (10-minute throttle).
+
+
 ## [0.3.6] - 2026-07-26
 
 ### Fixed

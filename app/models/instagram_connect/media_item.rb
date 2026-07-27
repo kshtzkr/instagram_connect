@@ -22,6 +22,12 @@ module InstagramConnect
     # Upserts by Meta's id. Media arrives from several directions — a webhook
     # about a comment, a story expiring, a sync — and whichever gets there first
     # should create the row without the others having to care.
+    # Stamped by SyncMediaJob when a completed listing no longer contains this
+    # post. Deleted on Instagram never means deleted here.
+    def removed?
+      removed_from_instagram_at.present?
+    end
+
     def self.record(account:, ig_media_id:, **attributes)
       media = find_or_initialize_by(account_id: account.id, ig_media_id: ig_media_id.to_s)
       media.assign_attributes(attributes.compact)
