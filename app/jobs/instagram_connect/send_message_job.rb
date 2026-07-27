@@ -41,7 +41,26 @@ module InstagramConnect
 
     def deliver(message, conversation, tag)
       client = conversation.account.client
-      parts = TextSplitter.split(message.body.to_s)
+
+      # The attachment goes first, so the customer sees the photo and then the
+      # words about it — the order the operator wrote them in. Sent by
+      # reference: attachment_upload_id is Meta's reusable id, so the same file
+      # is uploaded once however many threads it is sent to.
+      if message.attachment_upload_id.present? && !message.attachment_delivered?
+        result = client.send_attachment(recipient_id: conversation.igsid,
+                                        attachment_id: message.attachment_upload_id, tag: tag)
+        unless result.success?
+          return fail_message(message, result.error_code&.to_s, result.error_message)
+        end
+
+        message.update!(attachment_delivered_at: Time.current,
+                        ig_message_id: message.ig_message_id.presence || result.id)
+      end
+
+      # reject(&:blank?): an attachment-only message has no text, and splitting
+      # "" yields one empty part — which would post an empty message Meta has
+      # no reason to accept.
+      parts = TextSplitter.split(message.body.to_s).reject(&:blank?)
 
       # Resume rather than restart. A worker killed mid-fan-out has already
       # delivered the earlier parts, and re-sending them repeats text the
