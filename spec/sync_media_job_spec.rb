@@ -14,9 +14,12 @@ RSpec.describe InstagramConnect::SyncMediaJob do
       .to_return(status: 200, body: { data: items }.to_json, headers: json)
   end
 
-  it "fills in what each post is" do
+  it "fills in what each post is, including engagement and the poster frame" do
     single_page([ { id: "m-1", media_type: "REELS", caption: "Land in Hanoi",
                     permalink: "https://www.instagram.com/reel/abc/",
+                    media_url: "https://cdn/video.mp4",
+                    thumbnail_url: "https://cdn/poster.jpg",
+                    like_count: 143, comments_count: 37,
                     timestamp: "2026-04-22T10:00:00+0000" } ])
 
     described_class.perform_now(account.id)
@@ -24,7 +27,19 @@ RSpec.describe InstagramConnect::SyncMediaJob do
     item = InstagramConnect::MediaItem.find_by(ig_media_id: "m-1")
     expect(item.caption).to eq("Land in Hanoi")
     expect(item.permalink).to eq("https://www.instagram.com/reel/abc/")
+    expect(item.thumbnail_url).to eq("https://cdn/poster.jpg")
+    expect(item.like_count).to eq(143)
+    expect(item.comments_count).to eq(37)
     expect(item.posted_at).to be_present
+  end
+
+  it "asks Meta for the engagement fields" do
+    single_page([])
+
+    described_class.perform_now(account.id)
+
+    expect(WebMock).to have_requested(:get, "#{base}/IGUSER/media")
+      .with(query: hash_including("fields" => a_string_matching(/like_count,comments_count/)))
   end
 
   it "updates rather than duplicates a post it has seen before" do

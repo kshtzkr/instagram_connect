@@ -17,7 +17,11 @@ module InstagramConnect
     # enqueueing it once per page view.
     THROTTLE = 10.minutes
 
-    MEDIA_FIELDS = "id,caption,media_type,media_url,permalink,timestamp".freeze
+    # like_count and comments_count come straight off the media node — no
+    # insights permission needed for the account's own posts. thumbnail_url is
+    # the poster frame for videos, whose media_url is a playable mp4.
+    MEDIA_FIELDS = "id,caption,media_type,media_url,thumbnail_url,permalink," \
+                   "timestamp,like_count,comments_count".freeze
 
     def self.enqueue_throttled(account)
       Rails.cache.fetch("instagram_connect:sync_media:#{account.id}", expires_in: THROTTLE) do
@@ -62,6 +66,9 @@ module InstagramConnect
         caption: item["caption"],
         permalink: item["permalink"],
         media_url: item["media_url"],
+        thumbnail_url: item["thumbnail_url"],
+        like_count: item["like_count"],
+        comments_count: item["comments_count"],
         posted_at: parse_time(item["timestamp"]),
         synced_at: Time.current
       )
