@@ -133,7 +133,9 @@ module InstagramConnect
 
     def list_media(ig_user_id: @ig_user_id, limit: 25)
       get("/#{require_ig_user_id(ig_user_id)}/media",
-          { fields: "id,caption,media_type,media_url,permalink,timestamp", limit: limit })
+          { fields: "id,caption,media_type,media_url,thumbnail_url,permalink," \
+                    "timestamp,like_count,comments_count",
+            limit: limit })
     end
 
     def media_insights(media_id:, metrics: %w[reach likes comments])

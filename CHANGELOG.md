@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.8] - 2026-07-27
+
+### Added
+
+- **Media sync now carries engagement and the poster frame.** `like_count` and `comments_count`
+  come straight off the media node (no insights permission needed for the account's own posts) and
+  `thumbnail_url` is the poster for videos, whose `media_url` is a playable mp4. All three columns
+  existed since 0.3.0; nothing ever asked Meta for them.
+
+
 ## [0.3.7] - 2026-07-27
 
 ### Added
