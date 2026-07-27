@@ -108,4 +108,46 @@ RSpec.describe InstagramConnect::SyncCommentsJob do
 
     expect(InstagramConnect::Comment.find_by(comment_id: "c-t").commented_at).to be_nil
   end
+  describe "long reply threads" do
+    it "walks the replies edge when the inline expansion says there is more" do
+      comments_page([ { id: "c-busy", text: "top",
+                        replies: { data: [ { id: "r-1", text: "first inline" } ],
+                                   paging: { next: "https://graph/next" } } } ])
+      stub_request(:get, "#{base}/c-busy/replies").with(query: hash_including({}))
+        .to_return(status: 200,
+                   body: { data: [ { id: "r-2", text: "from the walk" },
+                                   { id: "r-3", text: "tail reply" } ] }.to_json,
+                   headers: json)
+
+      described_class.perform_now(account.id, "MEDIA1")
+
+      expect(InstagramConnect::Comment.where(parent_id: "c-busy").count).to eq(3)
+      expect(InstagramConnect::Comment.find_by(comment_id: "r-3").text).to eq("tail reply")
+    end
+
+    it "does not walk when the inline page was the whole thread" do
+      comments_page([ { id: "c-small", text: "top",
+                        replies: { data: [ { id: "r-only", text: "one reply" } ] } } ])
+
+      described_class.perform_now(account.id, "MEDIA1")
+
+      expect(WebMock).not_to have_requested(:get, %r{/c-small/replies})
+      expect(InstagramConnect::Comment.where(parent_id: "c-small").count).to eq(1)
+    end
+
+    it "keeps the inline replies when the overflow walk fails" do
+      comments_page([ { id: "c-flaky", text: "top",
+                        replies: { data: [ { id: "r-kept", text: "kept" } ],
+                                   paging: { next: "https://graph/next" } } } ])
+      stub_request(:get, "#{base}/c-flaky/replies").with(query: hash_including({}))
+        .to_return(status: 400, body: { error: { message: "nope", code: 1 } }.to_json,
+                   headers: json)
+
+      expect(Rails.logger).to receive(:error).with(/replies walk failed for comment=c-flaky/)
+      described_class.perform_now(account.id, "MEDIA1")
+
+      expect(InstagramConnect::Comment.find_by(comment_id: "r-kept")).to be_present
+    end
+  end
+
 end
