@@ -12,7 +12,12 @@ module InstagramConnect
 
     THROTTLE = 10.minutes
 
-    REPLY_FIELDS = "id,text,timestamp,username,from,parent_id,hidden,like_count".freeze
+    # Only fields Meta documents for INSTAGRAM comments. from{...} and
+    # parent_id are Facebook-comment fields; asking for them can fail the
+    # whole call with (#100) — and one refused field means zero comments
+    # imported. Reply nesting is derived from the replies expansion itself,
+    # and the commenter's igsid still arrives via webhooks.
+    REPLY_FIELDS = "id,text,timestamp,username,hidden,like_count".freeze
     COMMENT_FIELDS = "#{REPLY_FIELDS},replies{#{REPLY_FIELDS}}".freeze
 
     # One key per post: opening a busy post's comments repeatedly enqueues one
@@ -74,7 +79,7 @@ module InstagramConnect
         media_id: ig_media_id.to_s,
         text: item["text"],
         from_username: item["username"] || item.dig("from", "username"),
-        parent_id: item["parent_id"]
+        parent_id: item["parent_id"].presence
       )
       comment.update!(
         from_ig_id: item.dig("from", "id") || comment.from_ig_id,

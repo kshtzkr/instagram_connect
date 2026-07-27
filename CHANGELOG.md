@@ -10,6 +10,10 @@ All notable changes to this project are documented here. The format follows
 
 ### Fixed
 
+- **Comment import asks only for fields Instagram comments support.** `from{...}` and
+  `parent_id` are Facebook-comment fields; one refused field failed the whole call with (#100)
+  and zero comments imported. The upsert still uses them opportunistically when Meta sends them,
+  and reply nesting derives from the replies expansion itself.
 - **Long reply threads import whole.** The `replies{}` expansion is a single nested page; a
   comment whose thread ran past it silently lost the tail. When the inline page says there is
   more, the comment's replies edge is now walked in full — Instagram threads are two-level,
