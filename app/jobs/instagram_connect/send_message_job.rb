@@ -35,6 +35,13 @@ module InstagramConnect
       end
 
       deliver(message, conversation, tag)
+    rescue InstagramConnect::TokenUnreadableError => e
+      # The generic ApplicationJob rescue logs and stops — right for a sync
+      # job, wrong here: this job has already claimed the message into
+      # "sending", and swallowing the error leaves that bubble spinning
+      # forever with nothing to retry. The operator must see it fail, with
+      # the real reason on it.
+      fail_message(message, "token_unreadable", e.message)
     end
 
     private

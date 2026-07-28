@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.15] - 2026-07-28
+
+### Fixed
+
+- **A send against an unreadable token fails visibly instead of stranding the bubble.** The send
+  job claims the message into "sending" before building a client; the generic token guard then
+  logged and stopped, leaving the message spinning forever with no failed state, no retry button
+  and no reason on screen. It now fails with `token_unreadable` and the actionable message.
+
+
 ## [0.3.14] - 2026-07-28
 
 ### Added
