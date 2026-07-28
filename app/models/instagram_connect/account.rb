@@ -44,6 +44,13 @@ module InstagramConnect
     def token_readable?
       token = api_token.to_s
       token.present? && !token.match?(ENCRYPTED_ENVELOPE)
+    rescue ActiveRecord::Encryption::Errors::Base => e
+      # With previous-keys wired, a value no key set opens RAISES on read
+      # (AEAD tag verification) instead of returning ciphertext — production
+      # 500'd inside this very guard. Unreadable is unreadable, however the
+      # encryption layer chooses to say it.
+      Rails.logger.error("[instagram_connect] token read raised #{e.class} for account=#{id}")
+      false
     end
 
     TOKEN_UNREADABLE_MESSAGE =

@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.16] - 2026-07-28
+
+### Fixed
+
+- **`Account#token_readable?` can no longer raise.** With previous-keys wired for rotation, a
+  value no key set opens RAISES on read (AEAD tag verification) instead of returning ciphertext —
+  and the raise came from inside the guard itself, turning screens that consulted it into 500s.
+  Unreadable is unreadable, however the encryption layer chooses to say it.
+
+
 ## [0.3.15] - 2026-07-28
 
 ### Fixed
