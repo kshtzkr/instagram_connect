@@ -165,4 +165,71 @@ RSpec.describe InstagramConnect::SyncCommentsJob do
     end
   end
 
+  # The 2026-07-28 live failure: a comment made minutes earlier arrived via
+  # the sweep (not its webhook) and the automation never fired — the on_comment
+  # hook only lived on the webhook path. A fresh comment is fully actionable
+  # for 7 days, so the sweep announces it too; history stays silent.
+  describe "announcing fresh imports to the host" do
+    around do |example|
+      previous = InstagramConnect.configuration.on_comment
+      example.run
+    ensure
+      InstagramConnect.configuration.on_comment = previous
+    end
+
+    it "fires on_comment once for a newly imported fresh comment" do
+      seen = []
+      InstagramConnect.configuration.on_comment = ->(comment) { seen << comment.comment_id }
+      comments_page([ { id: "c-fresh", text: "I love bali can I get the itinerary",
+                        username: "kshtzkr",
+                        timestamp: 10.minutes.ago.iso8601 } ])
+
+      described_class.perform_now(account.id, "MEDIA1")
+      described_class.perform_now(account.id, "MEDIA1")
+
+      expect(seen).to eq([ "c-fresh" ])
+    end
+
+    it "stays silent for history older than the fresh window" do
+      seen = []
+      InstagramConnect.configuration.on_comment = ->(comment) { seen << comment.comment_id }
+      comments_page([ { id: "c-old", text: "bali!", timestamp: 3.days.ago.iso8601 } ])
+
+      described_class.perform_now(account.id, "MEDIA1")
+
+      expect(seen).to be_empty
+    end
+
+    it "stays silent when enriching a row the webhook already created" do
+      InstagramConnect::Comment.record(account: account, comment_id: "c-hooked",
+                                       media_id: "MEDIA1", text: "bali",
+                                       from_username: "asha")
+      seen = []
+      InstagramConnect.configuration.on_comment = ->(comment) { seen << comment.comment_id }
+      comments_page([ { id: "c-hooked", text: "bali", username: "asha",
+                        timestamp: 5.minutes.ago.iso8601 } ])
+
+      described_class.perform_now(account.id, "MEDIA1")
+
+      expect(seen).to be_empty
+    end
+
+    it "keeps walking when the host callback explodes" do
+      InstagramConnect.configuration.on_comment = ->(_c) { raise "host bug" }
+      comments_page([ { id: "c-1", text: "bali", timestamp: 5.minutes.ago.iso8601 },
+                      { id: "c-2", text: "goa", timestamp: 5.minutes.ago.iso8601 } ])
+
+      described_class.perform_now(account.id, "MEDIA1")
+
+      expect(InstagramConnect::Comment.where(comment_id: %w[c-1 c-2]).count).to eq(2)
+    end
+
+    it "does nothing when no callback is configured" do
+      InstagramConnect.configuration.on_comment = nil
+      comments_page([ { id: "c-3", text: "bali", timestamp: 5.minutes.ago.iso8601 } ])
+
+      expect { described_class.perform_now(account.id, "MEDIA1") }.not_to raise_error
+    end
+  end
+
 end
