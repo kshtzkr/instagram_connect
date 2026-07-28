@@ -106,6 +106,21 @@ RSpec.describe InstagramConnect::Client do
   end
 
   describe "reads" do
+    it "sends a private reply carrying quick replies, titles clipped to Meta's 20" do
+      stub_ok(:post, "/me/messages", body: { message_id: "m1" })
+
+      client.private_reply(comment_id: "c-1", text: "hey!",
+                           quick_replies: [ { title: "Yes! I want this itinerary now",
+                                              payload: "YES" } ])
+
+      expect(WebMock).to have_requested(:post, %r{/me/messages}).with { |req|
+        body = JSON.parse(req.body)
+        body.dig("recipient", "comment_id") == "c-1" &&
+          body.dig("message", "quick_replies", 0, "title") == "Yes! I want this itiner" [0, 20] &&
+          body.dig("message", "quick_replies", 0, "payload") == "YES"
+      }
+    end
+
     it "lists media" do
       stub_ok(:get, "/IGID/media", body: { data: [ { id: "m_1" } ] })
       expect(client.list_media.data["data"]).to eq([ { "id" => "m_1" } ])

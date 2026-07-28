@@ -8,6 +8,11 @@ All notable changes to this project are documented here. The format follows
 
 ## [0.3.18] - 2026-07-28
 
+### Added
+
+- **The comment-triggered DM (private reply) can carry quick replies.** It rides the full
+  messaging endpoint, so a funnel can open with buttons — titles clipped to Meta's 20 characters.
+
 ### Fixed
 
 - **Comment webhooks no longer arrive stamped January 1970.** Meta sends messaging-webhook
