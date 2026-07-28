@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.17] - 2026-07-28
+
+### Added
+
+- **The comment sweep announces fresh imports.** A comment younger than 24 hours that arrives via
+  `SyncCommentsJob` rather than its webhook now fires the host's `on_comment` callback — once, on
+  first import only, never for enriched webhook rows or older history. A fresh comment whose
+  webhook was lost (or that raced an automation rule being created) is fully actionable for 7 days
+  under Meta's private-reply window, so automations now self-heal on the next sweep instead of
+  silently never firing. A host callback that raises is logged and never kills the walk.
+
+
 ## [0.3.16] - 2026-07-28
 
 ### Fixed

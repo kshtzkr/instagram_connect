@@ -72,6 +72,13 @@ module InstagramConnect
       end
     end
 
+    # A sweep-imported comment younger than this still deserves the host's
+    # on_comment automations: Meta's private-reply window is 7 days, so a
+    # fresh comment whose webhook was lost (or raced a rule being created)
+    # is fully actionable when the next sweep finds it. Older imports are
+    # history and stay silent — nobody wants a DM about last month.
+    FRESH_WINDOW = 24.hours
+
     def upsert(account, ig_media_id, item)
       comment = Comment.record(
         account: account,
@@ -81,12 +88,28 @@ module InstagramConnect
         from_username: item["username"] || item.dig("from", "username"),
         parent_id: item["parent_id"].presence
       )
+      freshly_created = comment.previously_new_record?
       comment.update!(
         from_ig_id: item.dig("from", "id") || comment.from_ig_id,
         commented_at: parse_time(item["timestamp"]) || comment.commented_at,
         like_count: item["like_count"],
         hidden_at: item["hidden"] ? (comment.hidden_at || Time.current) : nil
       )
+      announce(comment) if freshly_created
+      comment
+    end
+
+    # Only NEWLY imported, still-fresh comments — a webhook-created row being
+    # enriched here already had its turn, and host automation jobs are
+    # idempotent per comment anyway. A host callback must never kill the walk.
+    def announce(comment)
+      return if comment.commented_at.blank? || comment.commented_at < FRESH_WINDOW.ago
+
+      callback = InstagramConnect.configuration.on_comment
+      callback&.call(comment)
+    rescue StandardError => e
+      logger.error("[instagram_connect] on_comment callback failed for " \
+                   "comment=#{comment.comment_id}: #{e.class}: #{e.message}")
     end
 
     def parse_time(value)
