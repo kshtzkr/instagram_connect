@@ -49,6 +49,18 @@ RSpec.describe "an access token this process cannot decrypt" do
     expect(WebMock).not_to have_requested(:any, /graph\.facebook\.com/)
   end
 
+  # Production 2026-07-28: with previous-keys wired, reading a token no key
+  # set opens RAISES (AEAD tag verification) instead of returning ciphertext —
+  # and the raise came from inside this very guard, 500ing the comments
+  # screen into Turbo's "Content missing".
+  it "stays false when the read itself raises" do
+    store_envelope!
+    allow(account).to receive(:api_token)
+      .and_raise(ActiveRecord::Encryption::Errors::Decryption)
+
+    expect(account.token_readable?).to be(false)
+  end
+
   it "treats a blank token as unusable too" do
     account.update_columns(access_token: nil, page_access_token: nil)
 
