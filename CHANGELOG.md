@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.18] - 2026-07-28
+
+### Added
+
+- **The comment-triggered DM (private reply) can carry quick replies.** It rides the full
+  messaging endpoint, so a funnel can open with buttons — titles clipped to Meta's 20 characters.
+
+### Fixed
+
+- **Comment webhooks no longer arrive stamped January 1970.** Meta sends messaging-webhook
+  timestamps in MILLISECONDS but comment/mention change webhooks in SECONDS; dividing everything
+  by 1000 collapsed every comment's clock to the epoch — which downstream read as "older than
+  Meta's 7-day reply window" and silently skipped every realtime comment automation.
+  `Envelope.time_from` now decides the unit by magnitude, so no caller has to know which field a
+  value came from.
+
+
 ## [0.3.17] - 2026-07-28
 
 ### Added

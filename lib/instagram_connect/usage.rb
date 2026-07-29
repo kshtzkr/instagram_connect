@@ -1,5 +1,9 @@
 require "json"
 
+# blank?/present? on plain objects — this file must not depend on which
+# spec or host loaded ActiveSupport core extensions first.
+require "active_support/core_ext/object/blank"
+
 module InstagramConnect
   # Meta's own account of how much of the rate budget a call just consumed,
   # parsed from the response headers.

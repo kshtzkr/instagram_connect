@@ -89,8 +89,19 @@ module InstagramConnect
     end
 
     # One-time private reply to a comment (comment -> DM), valid 7 days.
-    def private_reply(comment_id:, text:)
-      post("/me/messages", { recipient: { comment_id: comment_id }, message: { text: text } })
+    # The one DM a comment entitles us to send. It rides the full messaging
+    # endpoint (recipient by comment_id), so it can carry quick replies —
+    # which is how a comment-triggered funnel opens with buttons.
+    def private_reply(comment_id:, text:, quick_replies: nil)
+      message = { text: text }
+      if quick_replies.present?
+        message[:quick_replies] = Array(quick_replies).map do |reply|
+          { content_type: "text",
+            title: reply[:title].to_s[0, 20],
+            payload: reply[:payload].to_s }
+        end
+      end
+      post("/me/messages", { recipient: { comment_id: comment_id }, message: message })
     end
 
     # --- Comments --------------------------------------------------------
