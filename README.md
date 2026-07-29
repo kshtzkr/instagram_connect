@@ -27,6 +27,7 @@ Using the official API keeps the account in good standing.
 - [Connecting an account](#connecting-an-account)
 - [Webhooks](#webhooks)
 - [Replying to DMs and the messaging window](#replying-to-dms-and-the-messaging-window)
+- [Building a conversation flow](#building-a-conversation-flow)
 - [Moderating comments](#moderating-comments)
 - [Publishing](#publishing)
 - [Using the Graph client directly](#using-the-graph-client-directly)
@@ -216,6 +217,84 @@ window.open?      # => true / false
 window.state      # => :standard, :human_agent, or :closed
 window.send_tag   # => nil, "HUMAN_AGENT", or :blocked
 ```
+
+## Building a conversation flow
+
+The gem deliberately stops at transport and mirroring: it does not ship a flow
+engine, because every host application models funnels, states and leads
+differently. What it does ship is every primitive a Manychat-style flow needs,
+so the engine is a small state machine in your app:
+
+- **Triggers.** `config.on_comment` fires for every mirrored comment,
+  `config.on_message` for every inbound DM, `config.on_postback` for icebreaker
+  and menu taps. Each receives the persisted record — enqueue your own job and
+  return.
+- **The one comment reply.** `client.private_reply(comment_id:, text:,
+  quick_replies:)` sends the single DM a comment entitles you to — and it can
+  carry up to 13 quick-reply buttons, so the first message can already ask a
+  question.
+- **Buttons.** `client.send_quick_replies(recipient_id:, text:, replies:)`
+  asks a question mid-thread. When the customer taps one, the inbound
+  `Message` row arrives with `quick_reply_payload` set to the button's payload
+  string — match on that, not on the title text.
+- **Free-text answers.** A capture step is nothing more than remembering (in
+  your own state) that the next inbound `Message#body` for that conversation
+  is the answer.
+- **The clock.** Check `MessagingWindow` before every mid-thread send: each
+  customer reply re-opens the 24-hour window, silence closes it. A flow that
+  only ever speaks after the customer does never hits the wall.
+
+A minimal three-step flow — comment opens with a button, the tap asks for an
+email, the answer delivers a link:
+
+```ruby
+# config/initializers/instagram_connect.rb
+config.on_comment  = ->(comment) { FunnelOpenJob.perform_later(comment.id) }
+config.on_message  = ->(message) { FunnelAdvanceJob.perform_later(message.id) }
+
+class FunnelOpenJob < ApplicationJob
+  def perform(comment_id)
+    comment = InstagramConnect::Comment.find(comment_id)
+    return unless comment.text.match?(/vip/i)
+
+    account = comment.account
+    client = InstagramConnect::Client.new(access_token: account.access_token,
+                                          ig_user_id: account.ig_user_id)
+    client.private_reply(
+      comment_id: comment.comment_id,
+      text: "So excited you're here — want the VIP details?",
+      quick_replies: [ { title: "Yes!", payload: "VIP_YES" } ]
+    )
+    # remember in your own table: this conversation is now at step 1
+  end
+end
+
+class FunnelAdvanceJob < ApplicationJob
+  def perform(message_id)
+    message = InstagramConnect::Message.find(message_id)
+    step    = your_flow_state_for(message.conversation) or return
+    account = message.conversation.account
+    client  = InstagramConnect::Client.new(access_token: account.access_token,
+                                           ig_user_id: account.ig_user_id)
+
+    case step
+    when :awaiting_tap
+      return unless message.quick_reply_payload == "VIP_YES"
+      client.send_text(recipient_id: message.conversation.igsid,
+                       text: "Amazing! Drop your email and I'll send everything.")
+    when :awaiting_email
+      capture_lead!(email: message.body)
+      client.send_text(recipient_id: message.conversation.igsid,
+                       text: "Here you go: https://example.com/vip")
+    end
+  end
+end
+```
+
+Ground rules the platform enforces for you to design around: one private reply
+per comment (put a question or the payload in it — there is no second chance),
+sends only advance when the *customer* speaks, and a wrong answer deserves at
+most one re-prompt before a human takes over.
 
 ## Moderating comments
 
